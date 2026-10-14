@@ -35,6 +35,7 @@ export const Route = createRootRoute({
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <meta name="google-site-verification" content="euVOx2u0GRtHUOgBG1Jltp1zSuDpt5xNJvpYNIyN7kU" />
       </head>
       <body>
         <PreviewHostBridge />
