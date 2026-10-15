@@ -101,6 +101,7 @@ const PRO_FEATURES = [
 ];
 
 const PRO_STORAGE_KEY = "hc_pro";
+const PRO_TX_KEY = "hc_pro_tx";
 const SCENARIOS_KEY = "hc_scenarios";
 
 /** True when the buyer returned from PayPal (?pro=unlock-9d4f2c) or unlocked before. */
@@ -221,6 +222,8 @@ export function Calculator() {
   const [proUnlocked, setProUnlocked] = useState(
     () => typeof window !== "undefined" && readProUnlock(),
   );
+  const [txInput, setTxInput] = useState("");
+  const [txError, setTxError] = useState("");
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [scenarioName, setScenarioName] = useState("");
 
@@ -302,6 +305,24 @@ export function Calculator() {
     setHustle("delivery");
   }
 
+
+  function unlockWithTx() {
+    const tx = txInput.trim();
+    if (tx.length < 8) {
+      setTxError("Paste the transaction ID from your PayPal receipt email (17 characters).");
+      return;
+    }
+    try {
+      localStorage.setItem(PRO_STORAGE_KEY, "1");
+      localStorage.setItem(PRO_TX_KEY, tx);
+    } catch {
+      /* storage unavailable */
+    }
+    setTxError("");
+    setTxInput("");
+    setProUnlocked(true);
+    document.getElementById("pro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function saveScenario() {
     const fallbackName = `${hustleMeta.label} · ${state?.name ?? "No state"} · ${new Date().toLocaleDateString("en-US")}`;
@@ -885,6 +906,33 @@ export function Calculator() {
                   Secure checkout via PayPal. One-time payment — no subscription.
                 </p>
               </div>
+
+              <details className="mt-4 text-sm">
+                <summary className="cursor-pointer text-muted underline underline-offset-4">
+                  Already paid? Unlock Pro
+                </summary>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={txInput}
+                    onChange={(event) => setTxInput(event.target.value)}
+                    placeholder="PayPal transaction ID"
+                    autoComplete="off"
+                    className="min-h-12 flex-1 rounded-xl border border-line bg-raised px-4 text-sm text-fg placeholder:text-muted"
+                  />
+                  <button
+                    type="button"
+                    onClick={unlockWithTx}
+                    className="min-h-12 rounded-xl border border-line px-5 text-sm font-medium"
+                  >
+                    Unlock
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-muted">
+                  Find the 17-character ID in your PayPal receipt email. After checkout, PayPal can
+                  also send you straight back here, unlocked.
+                </p>
+                {txError && <p className="mt-2 text-xs text-red-400">{txError}</p>}
+              </details>
 
               
             </>
