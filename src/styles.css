@@ -142,3 +142,13 @@
     color: #555555 !important;
   }
 }
+
+@media print {
+  .pro-print-root {
+    min-height: 0 !important;
+    background: #ffffff !important;
+  }
+}
+@page {
+  margin: 12mm;
+}

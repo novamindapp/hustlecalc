@@ -37,7 +37,7 @@ import {
 } from "@/lib/tax";
 import { stateTaxWithBrackets } from "@/lib/state-brackets";
 
-const PAYPAL_RETURN_URL = "https://hustlecalc.vercel.app/?pro=1";
+const PAYPAL_RETURN_URL = "https://hustlecalc.vercel.app/?pro=unlock-9d4f2c";
 const PAYPAL_BUY_URL =
   "https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=salahnachat572@gmail.com&item_name=Side+Hustle+Tax+Calculator+Pro&amount=9.00&currency_code=USD&no_shipping=1&return=" +
   encodeURIComponent(PAYPAL_RETURN_URL);
@@ -104,11 +104,11 @@ const PRO_STORAGE_KEY = "hc_pro";
 const PRO_TX_KEY = "hc_pro_tx";
 const SCENARIOS_KEY = "hc_scenarios";
 
-/** True when the buyer returned from PayPal (?pro=1) or unlocked before. */
+/** True when the buyer returned from PayPal (?pro=unlock-9d4f2c) or unlocked before. */
 function readProUnlock(): boolean {
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("pro") === "1") {
+    if (params.get("pro") === "unlock-9d4f2c") {
       localStorage.setItem(PRO_STORAGE_KEY, "1");
       window.history.replaceState(null, "", window.location.pathname);
       return true;
