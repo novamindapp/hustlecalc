@@ -105,11 +105,14 @@ export type Estimate = {
   stateIncluded: boolean;
 };
 
-export function federalTax(taxable: number): number {
-  if (taxable <= 0) return 0;
+export type TaxBracket = { upTo: number | null; rate: number };
+
+/** Progressive tax on `taxable` through ascending brackets. Shared by federal and state. */
+export function applyBrackets(taxable: number, brackets: TaxBracket[]): number {
+  if (taxable <= 0 || brackets.length === 0) return 0;
   let tax = 0;
   let floor = 0;
-  for (const bracket of FEDERAL_BRACKETS) {
+  for (const bracket of brackets) {
     const ceiling = bracket.upTo ?? Number.POSITIVE_INFINITY;
     const slice = Math.min(taxable, ceiling) - floor;
     if (slice > 0) tax += slice * bracket.rate;
@@ -117,6 +120,10 @@ export function federalTax(taxable: number): number {
     floor = ceiling;
   }
   return tax;
+}
+
+export function federalTax(taxable: number): number {
+  return applyBrackets(taxable, FEDERAL_BRACKETS);
 }
 
 export function marginalRate(taxable: number): number {

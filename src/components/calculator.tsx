@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import {
+  BadgeCheck,
   Briefcase,
+  CalendarDays,
   Car,
   ChevronDown,
+  FileDown,
+  FolderOpen,
   Laptop,
+  Lightbulb,
   Lock,
+  Printer,
   RotateCcw,
+  Save,
   ShoppingBag,
+  Trash2,
   Video,
 } from "lucide-react";
 import {
@@ -27,9 +35,12 @@ import {
   formatUsd,
   parseMoney,
 } from "@/lib/tax";
+import { stateTaxWithBrackets } from "@/lib/state-brackets";
 
+const PAYPAL_RETURN_URL = "https://hustlecalc.vercel.app/?pro=1";
 const PAYPAL_BUY_URL =
-  "https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=salahnachat572@gmail.com&item_name=Side+Hustle+Tax+Calculator+Pro&amount=9.00&currency_code=USD&no_shipping=1";
+  "https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=salahnachat572@gmail.com&item_name=Side+Hustle+Tax+Calculator+Pro&amount=9.00&currency_code=USD&no_shipping=1&return=" +
+  encodeURIComponent(PAYPAL_RETURN_URL);
 
 const HUSTLES = [
   {
@@ -89,6 +100,86 @@ const PRO_FEATURES = [
   },
 ];
 
+const PRO_STORAGE_KEY = "hc_pro";
+const PRO_TX_KEY = "hc_pro_tx";
+const SCENARIOS_KEY = "hc_scenarios";
+
+/** True when the buyer returned from PayPal (?pro=1) or unlocked before. */
+function readProUnlock(): boolean {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("pro") === "1") {
+      localStorage.setItem(PRO_STORAGE_KEY, "1");
+      window.history.replaceState(null, "", window.location.pathname);
+      return true;
+    }
+    return localStorage.getItem(PRO_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+type Scenario = {
+  id: string;
+  name: string;
+  hustle: HustleId;
+  incomeRaw: string;
+  expenseRaw: string;
+  otherRaw: string;
+  stateCode: string;
+  savedAt: number;
+};
+
+function readScenarios(): Scenario[] {
+  try {
+    const raw = localStorage.getItem(SCENARIOS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as Scenario[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+const ESTIMATED_DATES = [
+  { quarter: "Q1", due: "April 15, 2025" },
+  { quarter: "Q2", due: "June 16, 2025" },
+  { quarter: "Q3", due: "September 15, 2025" },
+  { quarter: "Q4", due: "January 15, 2026" },
+];
+
+const TAX_TIPS: Record<HustleId, string[]> = {
+  delivery: [
+    "Mileage is usually the biggest write-off: the 2025 IRS standard rate is 70¢ per mile. Log every mile with an app.",
+    "Tolls, parking fees, and a reasonable portion of your phone bill are commonly deductible.",
+    "Gear like insulated bags, phone mounts, and chargers counts as business equipment.",
+    "Once a year, compare actual vehicle costs against the mileage rate and use whichever is larger.",
+  ],
+  freelance: [
+    "The simplified home-office deduction is $5 per sq ft (up to 300 sq ft) — no receipts needed.",
+    "Software, subscriptions, domains, and subcontractor payments are the write-offs people most often miss.",
+    "A SEP-IRA lets you deduct retirement contributions and lower this year's taxable income.",
+    "Keep business money in a separate account — it makes every deduction defensible.",
+  ],
+  selling: [
+    "Deduct the full cost of goods sold: product cost, inbound shipping, packaging, and marketplace fees.",
+    "Storage space — even a corner of a room used only for inventory — can qualify for the home-office deduction.",
+    "Returns, refunds, and damaged goods reduce taxable income; track them monthly.",
+    "Photography gear and listing tools used only for the shop are business expenses.",
+  ],
+  content: [
+    "Cameras, mics, and computers used for content can often be deducted in year one (Section 179).",
+    "Editing software, stock-music licenses, and a portion of your internet bill are typical write-offs.",
+    "A dedicated filming space at home may qualify for the simplified home-office deduction.",
+    "Brand-deal income counts the same as ad revenue — track both, and set aside tax monthly.",
+  ],
+  other: [
+    "Only “ordinary and necessary” costs count — personal spending never does, even if it feels related.",
+    "A separate bank account for the hustle turns a shoebox of receipts into a clean paper trail.",
+    "Estimated quarterly payments avoid the underpayment penalty once you owe over $1,000.",
+    "Retirement contributions (SEP-IRA or Solo 401(k)) are one of the largest legal reducers of taxable income.",
+  ],
+};
+
 function sanitizeMoney(input: string): string {
   const cleaned = input.replace(/[^\d.]/g, "");
   const [whole, ...rest] = cleaned.split(".");
@@ -128,6 +219,25 @@ export function Calculator() {
   const [incomeFocus, setIncomeFocus] = useState(false);
   const [expenseFocus, setExpenseFocus] = useState(false);
   const [otherFocus, setOtherFocus] = useState(false);
+  const [proUnlocked, setProUnlocked] = useState(
+    () => typeof window !== "undefined" && readProUnlock(),
+  );
+  const [txInput, setTxInput] = useState("");
+  const [txError, setTxError] = useState("");
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [scenarioName, setScenarioName] = useState("");
+
+  useEffect(() => {
+    setScenarios(readScenarios());
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+    } catch {
+      /* storage unavailable — scenarios just won't persist */
+    }
+  }, [scenarios]);
 
   const hustleMeta = HUSTLES.find((item) => item.id === hustle) ?? HUSTLES[0];
   const state = STATES.find((item) => item.code === stateCode) ?? null;
@@ -143,6 +253,30 @@ export function Calculator() {
       }),
     [incomeRaw, expenseRaw, otherRaw, state],
   );
+
+  /** Pro: real 2025 state brackets instead of the one approximate rate. */
+  const proStateTax = useMemo(() => {
+    if (!proUnlocked || !state) return null;
+    return stateTaxWithBrackets(state.code, Math.max(0, estimate.profit - estimate.halfSe));
+  }, [proUnlocked, state, estimate.profit, estimate.halfSe]);
+
+  const effStateTax = proUnlocked && proStateTax != null ? proStateTax : estimate.stateTax;
+  const effTotalTax = estimate.federal + estimate.seTax + (effStateTax ?? 0);
+  const effNetYearly = estimate.profit - effTotalTax;
+  const effEstimate = {
+    ...estimate,
+    stateTax: effStateTax,
+    totalTax: effTotalTax,
+    netYearly: effNetYearly,
+    netMonthly: effNetYearly / 12,
+  };
+
+  const quarterly = ESTIMATED_DATES.map((item) => ({
+    ...item,
+    income: estimate.yearlyRevenue / 4,
+    profit: estimate.profit / 4,
+    payment: effTotalTax / 4,
+  }));
 
   function onHustleKey(event: KeyboardEvent<HTMLDivElement>) {
     if (!["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(event.key)) return;
@@ -171,6 +305,53 @@ export function Calculator() {
     setHustle("delivery");
   }
 
+  function unlockWithTx() {
+    const tx = txInput.trim();
+    if (tx.length < 8) {
+      setTxError("Paste the transaction ID from your PayPal receipt email (17 characters).");
+      return;
+    }
+    try {
+      localStorage.setItem(PRO_STORAGE_KEY, "1");
+      localStorage.setItem(PRO_TX_KEY, tx);
+    } catch {
+      /* storage unavailable */
+    }
+    setTxError("");
+    setTxInput("");
+    setProUnlocked(true);
+    document.getElementById("pro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function saveScenario() {
+    const fallbackName = `${hustleMeta.label} · ${state?.name ?? "No state"} · ${new Date().toLocaleDateString("en-US")}`;
+    const next: Scenario = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: scenarioName.trim() || fallbackName,
+      hustle,
+      incomeRaw,
+      expenseRaw,
+      otherRaw,
+      stateCode,
+      savedAt: Date.now(),
+    };
+    setScenarios((prev) => [next, ...prev].slice(0, 24));
+    setScenarioName("");
+  }
+
+  function loadScenario(item: Scenario) {
+    setHustle(item.hustle);
+    setIncomeRaw(item.incomeRaw);
+    setExpenseRaw(item.expenseRaw);
+    setOtherRaw(item.otherRaw);
+    setStateCode(item.stateCode);
+    scrollToResults();
+  }
+
+  function deleteScenario(id: string) {
+    setScenarios((prev) => prev.filter((item) => item.id !== id));
+  }
+
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     scrollToResults();
@@ -184,7 +365,7 @@ export function Calculator() {
       : "After estimated tax";
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div className="pro-print-root min-h-screen bg-bg text-fg">
       <div className="brand-rule" />
       <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <header className="flex flex-wrap items-end justify-between gap-4">
@@ -346,13 +527,13 @@ export function Calculator() {
           >
             <ResultCard
               eyebrow={netLabel}
-              value={started ? formatUsd(estimate.netMonthly) : "—"}
+              value={started ? formatUsd(effEstimate.netMonthly) : "—"}
               caption={started ? `${takeHomeNote} · per month` : "Enter monthly income"}
               emphasis
             />
             <ResultCard
               eyebrow={estimate.profit < 0 ? "Yearly net loss" : "Net yearly profit"}
-              value={started ? formatUsd(estimate.netYearly) : "—"}
+              value={started ? formatUsd(effEstimate.netYearly) : "—"}
               caption={
                 started
                   ? `${hustleMeta.label}${state ? ` · ${state.name}` : ""}`
@@ -371,8 +552,8 @@ export function Calculator() {
           />
           <ResultCard
             eyebrow="State tax"
-            value={started && estimate.stateTax != null ? formatUsd(estimate.stateTax) : "—"}
-            caption={stateCaption(started, state)}
+            value={started && effEstimate.stateTax != null ? formatUsd(effEstimate.stateTax) : "—"}
+            caption={stateCaption(started, state, proUnlocked)}
           />
           <ResultCard
             eyebrow="Self-employment tax"
@@ -390,11 +571,11 @@ export function Calculator() {
                   {formatUsd(estimate.monthlyProfit)}/mo · {formatUsd(estimate.profit)}/yr
                 </span>
               </p>
-              {estimate.totalTax > 0 && (
+              {effEstimate.totalTax > 0 && (
                 <p className="text-sm text-muted">
                   About{" "}
                   <span className="font-medium text-fg tabular-nums">
-                    {formatRate(estimate.totalTax / estimate.profit)}
+                    {formatRate(effEstimate.totalTax / estimate.profit)}
                   </span>{" "}
                   of profit
                   {estimate.stateIncluded ? "" : ", before state tax"}
@@ -402,16 +583,16 @@ export function Calculator() {
               )}
             </div>
             <SplitBar
-              keep={Math.max(0, estimate.netYearly)}
+              keep={Math.max(0, effEstimate.netYearly)}
               federal={Math.max(0, estimate.federal)}
-              state={Math.max(0, estimate.stateTax ?? 0)}
+              state={Math.max(0, effEstimate.stateTax ?? 0)}
               se={estimate.seTax}
             />
-            {estimate.totalTax > 0 && (
+            {effEstimate.totalTax > 0 && (
               <p className="mt-4 text-sm">
                 Set aside about{" "}
                 <strong className="font-semibold text-keep tabular-nums">
-                  {formatUsd(estimate.totalTax / 12)}
+                  {formatUsd(effEstimate.totalTax / 12)}
                 </strong>{" "}
                 a month for these taxes
                 {estimate.stateIncluded ? "" : " (state not included yet)"}
@@ -464,11 +645,12 @@ export function Calculator() {
                 not the tax on that other income.
               </li>
               <li>
-                State tax is one approximate rate on profit after the self-employment deduction.
-                Progressive states are a mid-range stand-in, not your bracket.
+                {proUnlocked
+                  ? "Pro: state tax uses 2025 single-filer brackets and the state standard deduction. Still simplified — no credits, exemptions, or local taxes."
+                  : "State tax is one approximate rate on profit after the self-employment deduction. Progressive states are a mid-range stand-in, not your bracket."}
               </li>
             </ul>
-            {started && <Worksheet estimate={estimate} stateName={state?.name ?? null} />}
+            {started && <Worksheet estimate={effEstimate} stateName={state?.name ?? null} />}
             <div>
               <p className="font-medium text-fg">2025 single brackets</p>
               <ul className="mt-2 divide-y divide-line">
@@ -487,63 +669,380 @@ export function Calculator() {
         </details>
 
         <AdBanner />
-        <section className="mt-8 rounded-2xl border border-line bg-surface p-4 sm:p-6" aria-labelledby="pro-title">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium tracking-wider text-muted uppercase">Pro</p>
-              <h2 id="pro-title" className="mt-1 font-serif text-3xl leading-none">
-                A cleaner year-end packet
-              </h2>
-            </div>
-            <p className="font-serif text-4xl leading-none text-keep tabular-nums">$9</p>
-          </div>
-          <p className="mt-3 max-w-xl text-sm text-muted">
-            One-time unlock. Not a subscription. The estimate above stays free.
-          </p>
-
-          <div className="relative mt-5 overflow-hidden rounded-xl border border-line bg-bg">
-            <div className="flex items-end gap-3 px-5 pt-8 pb-4 blur-sm" aria-hidden="true">
-              <Bar h="h-10" />
-              <Bar h="h-16" />
-              <Bar h="h-12" />
-              <Bar h="h-20" />
-            </div>
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-sm">
-                <Lock className="size-4" aria-hidden="true" />
-                Yearly projection
-              </span>
-            </div>
-          </div>
-
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-            {PRO_FEATURES.map((feature) => (
-              <li key={feature.title} className="rounded-xl border border-line bg-bg px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-medium">{feature.title}</h3>
-                  <Lock className="size-4 shrink-0 text-muted" aria-hidden="true" />
+        <section id="pro" className="mt-8 rounded-2xl border border-line bg-surface p-4 sm:p-6" aria-labelledby="pro-title">
+          {proUnlocked ? (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium tracking-wider text-muted uppercase">Pro</p>
+                  <h2 id="pro-title" className="mt-1 font-serif text-3xl leading-none">
+                    Your Pro toolkit
+                  </h2>
                 </div>
-                <p className="mt-1 text-sm text-muted">{feature.detail}</p>
-              </li>
-            ))}
-          </ul>
+                <p className="inline-flex items-center gap-2 rounded-full border border-keep/40 bg-keep/10 px-3 py-1 text-sm font-medium text-keep">
+                  <BadgeCheck className="size-4" aria-hidden="true" />
+                  Unlocked
+                </p>
+              </div>
 
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <a
-              id="buy"
-              href={PAYPAL_BUY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-accent px-5 text-sm font-semibold text-ink"
-            >
-              Buy Now with PayPal · $9
-            </a>
-            <p className="text-xs text-muted">
-              Secure checkout via PayPal. One-time payment — no subscription.
-            </p>
-          </div>
+              <div className="mt-6">
+                <h3 className="flex items-center gap-2 font-medium text-fg">
+                  <Save className="size-4 text-accent" aria-hidden="true" />
+                  Save calculations
+                </h3>
+                <p className="mt-1 text-sm text-muted">
+                  Keep a scenario for each hustle and reopen it later.
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={scenarioName}
+                    onChange={(event) => setScenarioName(event.target.value)}
+                    placeholder="Name this scenario (optional)"
+                    className="min-h-12 flex-1 rounded-xl border border-line bg-raised px-4 text-sm text-fg placeholder:text-muted"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveScenario}
+                    className="min-h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-ink"
+                  >
+                    Save current
+                  </button>
+                </div>
+                {scenarios.length > 0 && (
+                  <ul className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line">
+                    {scenarios.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex items-center justify-between gap-3 bg-bg px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-fg">{item.name}</p>
+                          <p className="text-xs text-muted">
+                            {new Date(item.savedAt).toLocaleDateString("en-US")}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => loadScenario(item)}
+                            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line bg-raised px-3 text-xs font-medium"
+                          >
+                            <FolderOpen className="size-3.5" aria-hidden="true" />
+                            Load
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteScenario(item.id)}
+                            aria-label={`Delete ${item.name}`}
+                            className="inline-flex min-h-10 items-center rounded-lg border border-line px-3 text-muted"
+                          >
+                            <Trash2 className="size-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="mt-6 border-t border-line pt-6">
+                <h3 className="flex items-center gap-2 font-medium text-fg">
+                  <FileDown className="size-4 text-accent" aria-hidden="true" />
+                  Download PDF report
+                </h3>
+                <p className="mt-1 text-sm text-muted">
+                  A one-page summary of this estimate you can hand to a preparer.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-ink"
+                >
+                  <Printer className="size-4" aria-hidden="true" />
+                  Print / Save as PDF
+                </button>
+              </div>
+
+              <div className="mt-6 border-t border-line pt-6">
+                <h3 className="font-medium text-fg">More accurate state tax</h3>
+                {state && proStateTax != null ? (
+                  <>
+                    <p className="mt-1 text-sm text-muted">
+                      Approximate flat-rate figure:{" "}
+                      <span className="text-fg tabular-nums">
+                        {formatUsd(estimate.stateTax ?? 0)}
+                      </span>{" "}
+                      → 2025 bracket figure:{" "}
+                      <span className="font-medium text-keep tabular-nums">
+                        {formatUsd(proStateTax)}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      Uses {state.name} 2025 single-filer brackets and standard deduction. Still
+                      simplified — no credits, exemptions, or local taxes.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-muted">
+                    Select a state above to see the bracket-based figure.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-6 border-t border-line pt-6">
+                <h3 className="flex items-center gap-2 font-medium text-fg">
+                  <CalendarDays className="size-4 text-accent" aria-hidden="true" />
+                  Yearly projection
+                </h3>
+                {started && estimate.profit > 0 ? (
+                  <>
+                    <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+                      <table className="w-full min-w-130 text-sm">
+                        <thead>
+                          <tr className="border-b border-line bg-bg text-left text-xs tracking-wider text-muted uppercase">
+                            <th className="px-4 py-3 font-medium">Quarter</th>
+                            <th className="px-4 py-3 font-medium">Due</th>
+                            <th className="px-4 py-3 text-right font-medium">Profit</th>
+                            <th className="px-4 py-3 text-right font-medium">Set aside</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {quarterly.map((q) => (
+                            <tr key={q.quarter}>
+                              <td className="px-4 py-3 font-medium text-fg">{q.quarter}</td>
+                              <td className="px-4 py-3 text-muted">{q.due}</td>
+                              <td className="px-4 py-3 text-right text-fg tabular-nums">
+                                {formatUsd(q.profit)}
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium text-keep tabular-nums">
+                                {formatUsd(q.payment)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="mt-2 text-xs text-muted">
+                      Pay each quarterly amount by its due date to avoid an underpayment penalty.
+                      2025 estimated-tax dates.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-muted">
+                    Enter income above to build the quarterly plan.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-6 border-t border-line pt-6">
+                <h3 className="flex items-center gap-2 font-medium text-fg">
+                  <Lightbulb className="size-4 text-accent" aria-hidden="true" />
+                  Tax saving tips — {hustleMeta.label}
+                </h3>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted">
+                  {TAX_TIPS[hustle].map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-muted">
+                  Commonly deductible — confirm with a preparer. Not tax advice.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium tracking-wider text-muted uppercase">Pro</p>
+                  <h2 id="pro-title" className="mt-1 font-serif text-3xl leading-none">
+                    A cleaner year-end packet
+                  </h2>
+                </div>
+                <p className="font-serif text-4xl leading-none text-keep tabular-nums">$9</p>
+              </div>
+              <p className="mt-3 max-w-xl text-sm text-muted">
+                One-time unlock. Not a subscription. The estimate above stays free.
+              </p>
+
+              <div className="relative mt-5 overflow-hidden rounded-xl border border-line bg-bg">
+                <div className="flex items-end gap-3 px-5 pt-8 pb-4 blur-sm" aria-hidden="true">
+                  <Bar h="h-10" />
+                  <Bar h="h-16" />
+                  <Bar h="h-12" />
+                  <Bar h="h-20" />
+                </div>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-sm">
+                    <Lock className="size-4" aria-hidden="true" />
+                    Yearly projection
+                  </span>
+                </div>
+              </div>
+
+              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                {PRO_FEATURES.map((feature) => (
+                  <li key={feature.title} className="rounded-xl border border-line bg-bg px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-medium">{feature.title}</h3>
+                      <Lock className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                    </div>
+                    <p className="mt-1 text-sm text-muted">{feature.detail}</p>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <a
+                  id="buy"
+                  href={PAYPAL_BUY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-accent px-5 text-sm font-semibold text-ink"
+                >
+                  Buy Now with PayPal · $9
+                </a>
+                <p className="text-xs text-muted">
+                  Secure checkout via PayPal. One-time payment — no subscription.
+                </p>
+              </div>
+
+              <details className="mt-4 text-sm">
+                <summary className="cursor-pointer text-muted underline underline-offset-4">
+                  Already paid? Unlock Pro
+                </summary>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={txInput}
+                    onChange={(event) => setTxInput(event.target.value)}
+                    placeholder="PayPal transaction ID"
+                    autoComplete="off"
+                    className="min-h-12 flex-1 rounded-xl border border-line bg-raised px-4 text-sm text-fg placeholder:text-muted"
+                  />
+                  <button
+                    type="button"
+                    onClick={unlockWithTx}
+                    className="min-h-12 rounded-xl border border-line px-5 text-sm font-medium"
+                  >
+                    Unlock
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-muted">
+                  Find the 17-character ID in your PayPal receipt email. After checkout, PayPal can
+                  also send you straight back here, unlocked.
+                </p>
+                {txError && <p className="mt-2 text-xs text-red-400">{txError}</p>}
+              </details>
+            </>
+          )}
         </section>
       </main>
+      <ProPrintReport
+        hustleLabel={hustleMeta.label}
+        stateName={state?.name ?? null}
+        incomeRaw={incomeRaw}
+        expenseRaw={expenseRaw}
+        otherRaw={otherRaw}
+        estimate={effEstimate}
+        quarterly={quarterly}
+      />
+    </div>
+  );
+}
+
+/** Hidden on screen; printed (Save as PDF) from the Pro "Download PDF report" button. */
+function ProPrintReport({
+  hustleLabel,
+  stateName,
+  incomeRaw,
+  expenseRaw,
+  otherRaw,
+  estimate,
+  quarterly,
+}: {
+  hustleLabel: string;
+  stateName: string | null;
+  incomeRaw: string;
+  expenseRaw: string;
+  otherRaw: string;
+  estimate: ReturnType<typeof estimateTax>;
+  quarterly: { quarter: string; due: string; payment: number }[];
+}) {
+  const inputs: [string, string][] = [
+    ["Hustle type", hustleLabel],
+    ["Monthly income", incomeRaw ? formatUsd(parseMoney(incomeRaw)) : "—"],
+    ["Monthly expenses", expenseRaw ? formatUsd(parseMoney(expenseRaw)) : "—"],
+    ["Other yearly income", otherRaw ? formatUsd(parseMoney(otherRaw)) : "—"],
+    ["State", stateName ?? "—"],
+  ];
+  const lines: [string, string][] = [
+    ["Yearly income", formatUsd(estimate.yearlyRevenue)],
+    ["Yearly expenses", formatUsd(estimate.yearlyExpenses)],
+    ["Profit", formatUsd(estimate.profit)],
+    ["Self-employment tax", formatUsd(estimate.seTax)],
+    ["Federal tax from this hustle", formatUsd(estimate.federal)],
+    [
+      "State tax" + (stateName ? ` (${stateName})` : ""),
+      estimate.stateTax == null ? "—" : formatUsd(estimate.stateTax),
+    ],
+    ["Total estimated tax", formatUsd(estimate.totalTax)],
+    ["Net yearly profit", formatUsd(estimate.netYearly)],
+  ];
+  return (
+    <div className="print-report" aria-hidden="true">
+      <h1>Side Hustle Tax — 2025 Estimate Report</h1>
+      <p>
+        {new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}{" "}
+        · HustleCalc · hustlecalc.vercel.app
+      </p>
+      <h2>Inputs</h2>
+      <table>
+        <tbody>
+          {inputs.map(([label, value]) => (
+            <tr key={label}>
+              <th>{label}</th>
+              <td>{value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h2>Estimate</h2>
+      <table>
+        <tbody>
+          {lines.map(([label, value]) => (
+            <tr key={label}>
+              <th>{label}</th>
+              <td>{value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h2>Quarterly plan</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Quarter</th>
+            <th>Due</th>
+            <th>Set aside</th>
+          </tr>
+        </thead>
+        <tbody>
+          {quarterly.map((q) => (
+            <tr key={q.quarter}>
+              <td>{q.quarter}</td>
+              <td>{q.due}</td>
+              <td>{formatUsd(q.payment)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="print-disclaimer">
+        Estimate only — not tax, legal, or financial advice. Consult a tax professional. Local
+        taxes, credits, dependents, and itemized deductions are not included.
+      </p>
     </div>
   );
 }
@@ -724,10 +1223,12 @@ function federalCaption(started: boolean, federal: number, marginal: number, tax
 function stateCaption(
   started: boolean,
   state: { name: string; rate: number } | null,
+  pro: boolean,
 ): string {
   if (!started) return "All 50 states and DC";
   if (!state) return "Select a state";
   if (state.rate === 0) return `${state.name} does not tax this income`;
+  if (pro) return "2025 brackets · per year";
   return `Approx. ${formatRate(state.rate)} · per year`;
 }
 
