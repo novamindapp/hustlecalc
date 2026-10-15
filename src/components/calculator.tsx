@@ -37,10 +37,8 @@ import {
 } from "@/lib/tax";
 import { stateTaxWithBrackets } from "@/lib/state-brackets";
 
-const PAYPAL_RETURN_URL = "https://hustlecalc.vercel.app/?pro=unlock-9d4f2c";
-const PAYPAL_BUY_URL =
-  "https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=salahnachat572@gmail.com&item_name=Side+Hustle+Tax+Calculator+Pro&amount=9.00&currency_code=USD&no_shipping=1&return=" +
-  encodeURIComponent(PAYPAL_RETURN_URL);
+/** Payhip checkout for HustleCalc Pro ($9 one-time). */
+const PAYHIP_BUY_URL = "https://payhip.com/b/AUoHe";
 
 const HUSTLES = [
   {
@@ -79,6 +77,10 @@ type HustleId = (typeof HUSTLES)[number]["id"];
 
 const PRO_FEATURES = [
   {
+    title: "Deduction Finder",
+    detail: "Spot the write-offs you're missing — with your potential savings.",
+  },
+  {
     title: "Save calculations",
     detail: "Keep a scenario for each hustle and reopen it later.",
   },
@@ -101,19 +103,28 @@ const PRO_FEATURES = [
 ];
 
 const PRO_STORAGE_KEY = "hc_pro";
-const PRO_TX_KEY = "hc_pro_tx";
+const PRO_KEY_STORAGE = "hc_pro_key";
 const SCENARIOS_KEY = "hc_scenarios";
 
-/** True when the buyer returned from PayPal (?pro=unlock-9d4f2c) or unlocked before. */
+/** True when a license key was verified before. Re-checked with the server on load. */
 function readProUnlock(): boolean {
   try {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("pro") === "unlock-9d4f2c") {
-      localStorage.setItem(PRO_STORAGE_KEY, "1");
-      window.history.replaceState(null, "", window.location.pathname);
-      return true;
-    }
-    return localStorage.getItem(PRO_STORAGE_KEY) === "1";
+    return localStorage.getItem(PRO_STORAGE_KEY) === "1" && !!localStorage.getItem(PRO_KEY_STORAGE);
+  } catch {
+    return false;
+  }
+}
+
+/** Asks the server (/api/verify) whether a Payhip license key is valid. */
+async function verifyLicenseKey(key: string): Promise<boolean> {
+  try {
+    const r = await fetch("/api/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+    });
+    const d = (await r.json().catch(() => null)) as { ok?: boolean } | null;
+    return !!(d && d.ok);
   } catch {
     return false;
   }
@@ -141,10 +152,20 @@ function readScenarios(): Scenario[] {
 }
 
 const ESTIMATED_DATES = [
-  { quarter: "Q1", due: "April 15, 2026" },
-  { quarter: "Q2", due: "June 15, 2026" },
-  { quarter: "Q3", due: "September 15, 2026" },
-  { quarter: "Q4", due: "January 15, 2027" },
+  ...(() => {
+        const __out: { quarter: string; due: string }[] = [];
+        const __now = new Date(); __now.setHours(0, 0, 0, 0);
+        const __fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+        const __c = (y: number) => [
+          { q: "Q1", d: new Date(y, 3, 15) },
+          { q: "Q2", d: new Date(y, 5, 15) },
+          { q: "Q3", d: new Date(y, 8, 15) },
+          { q: "Q4", d: new Date(y + 1, 0, 15) },
+        ];
+        const __push = (y: number) => { for (const x of __c(y)) { if (__out.length >= 4) break; if (x.d >= __now) __out.push({ quarter: x.q, due: __fmt(x.d) }); } };
+        __push(__now.getFullYear()); __push(__now.getFullYear() + 1);
+        return __out;
+      })(),
 ];
 
 const TAX_TIPS: Record<HustleId, string[]> = {
@@ -210,6 +231,184 @@ function AdBanner() {
   return <div ref={boxRef} className="mt-8 flex justify-center" aria-label="Advertisement" />;
 }
 
+
+/* ---------------- Deduction Finder ---------------- */
+const DF_MILEAGE_RATE = 0.7425; // 2026 IRS blended rate: 72.5c Jan-Jun, 76c Jul-Dec
+const DF_HOME_RATE = 5; // simplified home office: $5 / sq ft
+const DF_HOME_MAX = 1500; // simplified cap
+
+type DfAnswers = {
+  miles: string;
+  sqft: string;
+  phonePct: string;
+  phoneBill: string;
+  health: string;
+  supplies: string;
+};
+
+function dfNum(raw: string): number {
+  const n = parseFloat(raw.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function DfInput({
+  id,
+  label,
+  suffix,
+  value,
+  onChange,
+  hint,
+}: {
+  id: string;
+  label: string;
+  suffix: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint: string;
+}) {
+  return (
+    <label className="block" htmlFor={id}>
+      <span className="mb-2 block text-sm font-medium">{label}</span>
+      <span className="flex items-center rounded-xl border border-line bg-raised">
+        <input
+          id={id}
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="0"
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
+          className="min-h-12 w-full bg-transparent px-4 text-xl text-fg tabular-nums placeholder:text-muted"
+        />
+        <span className="pr-4 text-sm whitespace-nowrap text-muted" aria-hidden="true">
+          {suffix}
+        </span>
+      </span>
+      <span className="mt-1 block text-xs text-muted">{hint}</span>
+    </label>
+  );
+}
+
+function DeductionFinder({ proUnlocked }: { proUnlocked: boolean }) {
+  const [a, setA] = useState<DfAnswers>({
+    miles: "",
+    sqft: "",
+    phonePct: "",
+    phoneBill: "",
+    health: "",
+    supplies: "",
+  });
+  const set = (k: keyof DfAnswers) => (v: string) => setA((p) => ({ ...p, [k]: v }));
+
+  const rows = [
+    {
+      label: "Mileage",
+      amount: dfNum(a.miles) * 52 * DF_MILEAGE_RATE,
+      how: "Log business miles; claim the 2026 IRS standard rate.",
+    },
+    {
+      label: "Home office",
+      amount: Math.min(dfNum(a.sqft) * DF_HOME_RATE, DF_HOME_MAX),
+      how: "Simplified method: $5/sq ft up to $1,500. Space must be exclusive and regular.",
+    },
+    {
+      label: "Phone",
+      amount: (dfNum(a.phoneBill) * 12 * dfNum(a.phonePct)) / 100,
+      how: "Deduct the work share of your monthly bill.",
+    },
+    {
+      label: "Health insurance",
+      amount: dfNum(a.health),
+      how: "Premiums can be 100% deductible when you're self-employed.",
+    },
+    {
+      label: "Supplies & gear",
+      amount: dfNum(a.supplies),
+      how: "Bags, tools and gear ordinary for the hustle.",
+    },
+  ].filter((r) => r.amount > 0);
+  const total = rows.reduce((s, r) => s + r.amount, 0);
+  const answered = Object.values(a).some((v) => v.trim() !== "");
+
+  return (
+    <section
+      className="mt-8 rounded-2xl border border-line bg-surface p-4 sm:p-6"
+      aria-labelledby="df-title"
+    >
+      <p className="text-xs font-medium tracking-wider text-muted uppercase">
+        Deduction Finder
+      </p>
+      <h2 id="df-title" className="mt-1 font-serif text-3xl leading-none">
+        Write-offs you&apos;re missing
+      </h2>
+      <p className="mt-3 max-w-xl text-sm text-muted">
+        Six quick questions. See roughly how much you could be leaving on the table.
+      </p>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <DfInput id="df-miles" label="Business miles" suffix="mi / week" value={a.miles} onChange={set("miles")} hint="Driving for deliveries or rideshare" />
+        <DfInput id="df-sqft" label="Home workspace" suffix="sq ft" value={a.sqft} onChange={set("sqft")} hint="Area used only for work" />
+        <DfInput id="df-phonepct" label="Phone used for work" suffix="%" value={a.phonePct} onChange={set("phonePct")} hint="Share of your phone that's business" />
+        <DfInput id="df-phonebill" label="Monthly phone bill" suffix="$ / mo" value={a.phoneBill} onChange={set("phoneBill")} hint="What you pay each month" />
+        <DfInput id="df-health" label="Health premiums" suffix="$ / year" value={a.health} onChange={set("health")} hint="Paid yourself, per year" />
+        <DfInput id="df-supplies" label="Supplies & gear" suffix="$ / year" value={a.supplies} onChange={set("supplies")} hint="Bags, tools, equipment per year" />
+      </div>
+
+      {answered && (
+        <div className="mt-6 rounded-xl border border-keep/40 bg-keep/10 p-5 text-center">
+          <p className="text-sm text-muted">Potential missing deductions</p>
+          <p className="mt-1 font-serif text-5xl leading-none text-keep tabular-nums">
+            ~{formatUsd(Math.round(total))}
+          </p>
+          <p className="mt-2 text-xs text-muted">per year · estimates only, not tax advice</p>
+        </div>
+      )}
+
+      {answered && rows.length > 0 && proUnlocked && (
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {rows.map((r) => (
+            <li key={r.label} className="rounded-xl border border-line bg-bg px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-medium">{r.label}</h3>
+                <span className="font-serif text-xl text-keep tabular-nums">
+                  {formatUsd(Math.round(r.amount))}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-muted">{r.how}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {answered && rows.length > 0 && !proUnlocked && (
+        <div className="relative mt-4 overflow-hidden rounded-xl border border-line bg-bg">
+          <ul className="grid gap-3 p-4 blur-sm sm:grid-cols-2" aria-hidden="true">
+            {rows.map((r) => (
+              <li key={r.label} className="rounded-xl border border-line px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-medium">{r.label}</h3>
+                  <span className="font-serif text-xl tabular-nums">
+                    {formatUsd(Math.round(r.amount))}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted">{r.how}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <a
+              href="#pro"
+              className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium"
+            >
+              <Lock className="size-4" aria-hidden="true" />
+              Unlock the full breakdown · Pro $9
+            </a>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function Calculator() {
   const [hustle, setHustle] = useState<HustleId>("delivery");
   const [incomeRaw, setIncomeRaw] = useState("");
@@ -229,6 +428,33 @@ export function Calculator() {
 
   useEffect(() => {
     setScenarios(readScenarios());
+  }, []);
+
+  // Re-verify a stored license key with the server on load; lock if invalid.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let key: string | null = null;
+      try {
+        key = localStorage.getItem(PRO_KEY_STORAGE);
+      } catch {
+        /* storage unavailable */
+      }
+      if (!key) return;
+      const ok = await verifyLicenseKey(key);
+      if (!cancelled && !ok) {
+        try {
+          localStorage.removeItem(PRO_STORAGE_KEY);
+          localStorage.removeItem(PRO_KEY_STORAGE);
+        } catch {
+          /* storage unavailable */
+        }
+        setProUnlocked(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -306,15 +532,21 @@ export function Calculator() {
   }
 
 
-  function unlockWithTx() {
-    const tx = txInput.trim();
-    if (tx.length < 8) {
-      setTxError("Paste the transaction ID from your PayPal receipt email (17 characters).");
+  async function unlockWithKey() {
+    const key = txInput.trim();
+    if (key.length < 8) {
+      setTxError("Paste the license key from your Payhip receipt email.");
+      return;
+    }
+    setTxError("Checking…");
+    const ok = await verifyLicenseKey(key);
+    if (!ok) {
+      setTxError("That key didn't verify. Check it and try again.");
       return;
     }
     try {
       localStorage.setItem(PRO_STORAGE_KEY, "1");
-      localStorage.setItem(PRO_TX_KEY, tx);
+      localStorage.setItem(PRO_KEY_STORAGE, key);
     } catch {
       /* storage unavailable */
     }
@@ -670,6 +902,8 @@ export function Calculator() {
         </details>
 
         <AdBanner />
+                {/* Deduction Finder: free teaser number, Pro-gated breakdown */}
+        <DeductionFinder proUnlocked={proUnlocked} />
         <section id="pro" className="mt-8 rounded-2xl border border-line bg-surface p-4 sm:p-6" aria-labelledby="pro-title">
           {proUnlocked ? (
             <>
@@ -825,7 +1059,7 @@ export function Calculator() {
                     </div>
                     <p className="mt-2 text-xs text-muted">
                       Pay each quarterly amount by its due date to avoid an underpayment penalty.
-                      2026 estimated-tax dates.
+                      Upcoming estimated-tax dates.
                     </p>
                   </>
                 ) : (
@@ -895,15 +1129,15 @@ export function Calculator() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
                   id="buy"
-                  href={PAYPAL_BUY_URL}
+                  href={PAYHIP_BUY_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex min-h-12 items-center justify-center rounded-xl bg-accent px-5 text-sm font-semibold text-ink"
                 >
-                  Buy Now with PayPal · $9
+                  Buy Now · $9
                 </a>
                 <p className="text-xs text-muted">
-                  Secure checkout via PayPal. One-time payment — no subscription.
+                  Secure checkout via Payhip. One-time payment — no subscription.
                 </p>
               </div>
 
@@ -915,21 +1149,20 @@ export function Calculator() {
                   <input
                     value={txInput}
                     onChange={(event) => setTxInput(event.target.value)}
-                    placeholder="PayPal transaction ID"
+                    placeholder="License key"
                     autoComplete="off"
                     className="min-h-12 flex-1 rounded-xl border border-line bg-raised px-4 text-sm text-fg placeholder:text-muted"
                   />
                   <button
                     type="button"
-                    onClick={unlockWithTx}
+                    onClick={unlockWithKey}
                     className="min-h-12 rounded-xl border border-line px-5 text-sm font-medium"
                   >
                     Unlock
                   </button>
                 </div>
                 <p className="mt-2 text-xs text-muted">
-                  Find the 17-character ID in your PayPal receipt email. After checkout, PayPal can
-                  also send you straight back here, unlocked.
+                  Find your license key in your Payhip receipt email.
                 </p>
                 {txError && <p className="mt-2 text-xs text-red-400">{txError}</p>}
               </details>
