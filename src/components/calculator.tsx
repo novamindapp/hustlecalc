@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import {
   Briefcase,
@@ -98,6 +98,25 @@ function sanitizeMoney(input: string): string {
 
 function formatNumber(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+function AdBanner() {
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || box.dataset.done) return;
+    box.dataset.done = "1";
+    const cfg = document.createElement("script");
+    cfg.type = "text/javascript";
+    cfg.text =
+      "atOptions = { 'key' : 'd42c14365549f87b714f9e317f65105b', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };";
+    const lib = document.createElement("script");
+    lib.type = "text/javascript";
+    lib.src = "https://bauval.org/22/d42c14365549f87b714f9e317f65105b";
+    box.appendChild(cfg);
+    box.appendChild(lib);
+  }, []);
+  return <div ref={boxRef} className="mt-8 flex justify-center" aria-label="Advertisement" />;
 }
 
 export function Calculator() {
@@ -467,6 +486,7 @@ export function Calculator() {
           </div>
         </details>
 
+        <AdBanner />
         <section className="mt-8 rounded-2xl border border-line bg-surface p-4 sm:p-6" aria-labelledby="pro-title">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -519,7 +539,7 @@ export function Calculator() {
               Buy Now with PayPal · $9
             </a>
             <p className="text-xs text-muted">
-              Placeholder PayPal link. Swap in your own hosted button before taking payment.
+              Secure checkout via PayPal. One-time payment — no subscription.
             </p>
           </div>
         </section>
