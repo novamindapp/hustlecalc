@@ -141,15 +141,15 @@ function readScenarios(): Scenario[] {
 }
 
 const ESTIMATED_DATES = [
-  { quarter: "Q1", due: "April 15, 2025" },
-  { quarter: "Q2", due: "June 16, 2025" },
-  { quarter: "Q3", due: "September 15, 2025" },
-  { quarter: "Q4", due: "January 15, 2026" },
+  { quarter: "Q1", due: "April 15, 2026" },
+  { quarter: "Q2", due: "June 15, 2026" },
+  { quarter: "Q3", due: "September 15, 2026" },
+  { quarter: "Q4", due: "January 15, 2027" },
 ];
 
 const TAX_TIPS: Record<HustleId, string[]> = {
   delivery: [
-    "Mileage is usually the biggest write-off: the 2025 IRS standard rate is 70¢ per mile. Log every mile with an app.",
+    "Mileage is usually the biggest write-off: the 2026 IRS standard rate is 76¢ per mile. Log every mile with an app.",
     "Tolls, parking fees, and a reasonable portion of your phone bill are commonly deductible.",
     "Gear like insulated bags, phone mounts, and chargers counts as business equipment.",
     "Once a year, compare actual vehicle costs against the mileage rate and use whichever is larger.",
@@ -254,7 +254,7 @@ export function Calculator() {
     [incomeRaw, expenseRaw, otherRaw, state],
   );
 
-  /** Pro: real 2025 state brackets instead of the one approximate rate. */
+  /** Pro: real 2026 state brackets instead of the one approximate rate. */
   const proStateTax = useMemo(() => {
     if (!proUnlocked || !state) return null;
     return stateTaxWithBrackets(state.code, Math.max(0, estimate.profit - estimate.halfSe));
@@ -647,13 +647,13 @@ export function Calculator() {
               </li>
               <li>
                 {proUnlocked
-                  ? "Pro: state tax uses 2025 single-filer brackets and the state standard deduction. Still simplified — no credits, exemptions, or local taxes."
+                  ? "Pro: state tax uses 2026 single-filer brackets and the state standard deduction. Still simplified — no credits, exemptions, or local taxes."
                   : "State tax is one approximate rate on profit after the self-employment deduction. Progressive states are a mid-range stand-in, not your bracket."}
               </li>
             </ul>
             {started && <Worksheet estimate={effEstimate} stateName={state?.name ?? null} />}
             <div>
-              <p className="font-medium text-fg">2025 single brackets</p>
+              <p className="font-medium text-fg">2026 single brackets</p>
               <ul className="mt-2 divide-y divide-line">
                 {FEDERAL_BRACKETS.map((bracket, index) => {
                   const prev = index === 0 ? null : FEDERAL_BRACKETS[index - 1].upTo;
@@ -773,13 +773,13 @@ export function Calculator() {
                       <span className="text-fg tabular-nums">
                         {formatUsd(estimate.stateTax ?? 0)}
                       </span>{" "}
-                      → 2025 bracket figure:{" "}
+                      → 2026 bracket figure:{" "}
                       <span className="font-medium text-keep tabular-nums">
                         {formatUsd(proStateTax)}
                       </span>
                     </p>
                     <p className="mt-1 text-xs text-muted">
-                      Uses {state.name} 2025 single-filer brackets and standard deduction. Still
+                      Uses {state.name} 2026 single-filer brackets and standard deduction. Still
                       simplified — no credits, exemptions, or local taxes.
                     </p>
                   </>
@@ -825,7 +825,7 @@ export function Calculator() {
                     </div>
                     <p className="mt-2 text-xs text-muted">
                       Pay each quarterly amount by its due date to avoid an underpayment penalty.
-                      2025 estimated-tax dates.
+                      2026 estimated-tax dates.
                     </p>
                   </>
                 ) : (
@@ -992,7 +992,7 @@ function ProPrintReport({
   ];
   return (
     <div className="print-report" aria-hidden="true">
-      <h1>Side Hustle Tax — 2025 Estimate Report</h1>
+      <h1>Side Hustle Tax — 2026 Estimate Report</h1>
       <p>
         {new Date().toLocaleDateString("en-US", {
           year: "numeric",
@@ -1217,7 +1217,7 @@ function Worksheet({
 }
 
 function federalCaption(started: boolean, federal: number, marginal: number, taxable: number): string {
-  if (!started) return "2025 single brackets";
+  if (!started) return "2026 single brackets";
   if (federal < 0) return "Estimated tax saved on other income";
   if (taxable <= 0) return "Inside the standard deduction";
   return `Top rate ${formatRate(marginal)} · per year`;
@@ -1231,7 +1231,7 @@ function stateCaption(
   if (!started) return "All 50 states and DC";
   if (!state) return "Select a state";
   if (state.rate === 0) return `${state.name} does not tax this income`;
-  if (pro) return "2025 brackets · per year";
+  if (pro) return "2026 brackets · per year";
   return `Approx. ${formatRate(state.rate)} · per year`;
 }
 

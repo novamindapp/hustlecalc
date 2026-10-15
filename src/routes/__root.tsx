@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Estimate federal, state, and self-employment tax on Uber, DoorDash, freelance, Etsy, YouTube, and other side hustle income. 2025 single-filer brackets.",
+          "Estimate federal, state, and self-employment tax on Uber, DoorDash, freelance, Etsy, YouTube, and other side hustle income. 2026 single-filer brackets.",
       },
       { name: "theme-color", content: "#07141c" },
     ],

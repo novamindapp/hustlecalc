@@ -1,24 +1,24 @@
-/** Simplified 2025 single-filer estimate for side-hustle profit. Not tax advice. */
+/** Simplified 2026 single-filer estimate for side-hustle profit. Not tax advice. */
 
-export const TAX_YEAR = 2025;
-export const STANDARD_DEDUCTION_SINGLE = 15_000;
+export const TAX_YEAR = 2026;
+export const STANDARD_DEDUCTION_SINGLE = 16_100;
 export const QBI_RATE = 0.2;
 /** Simplified cutoff. Above this, the free estimate drops the QBI deduction. */
-export const QBI_LIMIT = 197_300;
+export const QBI_LIMIT = 201_750;
 export const SE_NET_FACTOR = 0.9235;
 export const SE_COMBINED_RATE = 0.153;
 /** Schedule SE filing threshold on net earnings (after the 92.35% factor). */
 export const SE_THRESHOLD = 400;
-export const SS_WAGE_BASE = 176_100;
+export const SS_WAGE_BASE = 184_500;
 export const ADDITIONAL_MEDICARE_THRESHOLD = 200_000;
 
 export const FEDERAL_BRACKETS: { upTo: number | null; rate: number }[] = [
-  { upTo: 11_925, rate: 0.1 },
-  { upTo: 48_475, rate: 0.12 },
-  { upTo: 103_350, rate: 0.22 },
-  { upTo: 197_300, rate: 0.24 },
-  { upTo: 250_525, rate: 0.32 },
-  { upTo: 626_350, rate: 0.35 },
+  { upTo: 12_400, rate: 0.1 },
+  { upTo: 50_400, rate: 0.12 },
+  { upTo: 105_700, rate: 0.22 },
+  { upTo: 201_775, rate: 0.24 },
+  { upTo: 256_225, rate: 0.32 },
+  { upTo: 640_600, rate: 0.35 },
   { upTo: null, rate: 0.37 },
 ];
 
@@ -27,7 +27,7 @@ export const STATES: { code: string; name: string; rate: number }[] = [
   { code: "AL", name: "Alabama", rate: 0.05 },
   { code: "AK", name: "Alaska", rate: 0 },
   { code: "AZ", name: "Arizona", rate: 0.025 },
-  { code: "AR", name: "Arkansas", rate: 0.039 },
+  { code: "AR", name: "Arkansas", rate: 0.037 },
   { code: "CA", name: "California", rate: 0.06 },
   { code: "CO", name: "Colorado", rate: 0.044 },
   { code: "CT", name: "Connecticut", rate: 0.055 },
@@ -36,30 +36,30 @@ export const STATES: { code: string; name: string; rate: number }[] = [
   { code: "FL", name: "Florida", rate: 0 },
   { code: "GA", name: "Georgia", rate: 0.0519 },
   { code: "HI", name: "Hawaii", rate: 0.07 },
-  { code: "ID", name: "Idaho", rate: 0.057 },
+  { code: "ID", name: "Idaho", rate: 0.053 },
   { code: "IL", name: "Illinois", rate: 0.0495 },
-  { code: "IN", name: "Indiana", rate: 0.0305 },
+  { code: "IN", name: "Indiana", rate: 0.0295 },
   { code: "IA", name: "Iowa", rate: 0.038 },
   { code: "KS", name: "Kansas", rate: 0.052 },
-  { code: "KY", name: "Kentucky", rate: 0.04 },
+  { code: "KY", name: "Kentucky", rate: 0.035 },
   { code: "LA", name: "Louisiana", rate: 0.03 },
   { code: "ME", name: "Maine", rate: 0.065 },
   { code: "MD", name: "Maryland", rate: 0.05 },
   { code: "MA", name: "Massachusetts", rate: 0.05 },
   { code: "MI", name: "Michigan", rate: 0.0425 },
   { code: "MN", name: "Minnesota", rate: 0.068 },
-  { code: "MS", name: "Mississippi", rate: 0.044 },
+  { code: "MS", name: "Mississippi", rate: 0.04 },
   { code: "MO", name: "Missouri", rate: 0.047 },
-  { code: "MT", name: "Montana", rate: 0.059 },
-  { code: "NE", name: "Nebraska", rate: 0.052 },
+  { code: "MT", name: "Montana", rate: 0.0565 },
+  { code: "NE", name: "Nebraska", rate: 0.0455 },
   { code: "NV", name: "Nevada", rate: 0 },
   { code: "NH", name: "New Hampshire", rate: 0 },
   { code: "NJ", name: "New Jersey", rate: 0.055 },
   { code: "NM", name: "New Mexico", rate: 0.049 },
-  { code: "NY", name: "New York", rate: 0.06 },
-  { code: "NC", name: "North Carolina", rate: 0.0425 },
+  { code: "NY", name: "New York", rate: 0.059 },
+  { code: "NC", name: "North Carolina", rate: 0.0399 },
   { code: "ND", name: "North Dakota", rate: 0.025 },
-  { code: "OH", name: "Ohio", rate: 0.035 },
+  { code: "OH", name: "Ohio", rate: 0.0275 },
   { code: "OK", name: "Oklahoma", rate: 0.045 },
   { code: "OR", name: "Oregon", rate: 0.08 },
   { code: "PA", name: "Pennsylvania", rate: 0.0307 },
@@ -68,7 +68,7 @@ export const STATES: { code: string; name: string; rate: number }[] = [
   { code: "SD", name: "South Dakota", rate: 0 },
   { code: "TN", name: "Tennessee", rate: 0 },
   { code: "TX", name: "Texas", rate: 0 },
-  { code: "UT", name: "Utah", rate: 0.0455 },
+  { code: "UT", name: "Utah", rate: 0.045 },
   { code: "VT", name: "Vermont", rate: 0.06 },
   { code: "VA", name: "Virginia", rate: 0.05 },
   { code: "WA", name: "Washington", rate: 0 },
