@@ -36,6 +36,7 @@ import {
   parseMoney,
 } from "@/lib/tax";
 import { stateTaxWithBrackets } from "@/lib/state-brackets";
+import { ProTools } from "./pro-tools";
 
 /** Payhip checkout for HustleCalc Pro ($9 one-time). */
 const PAYHIP_BUY_URL = "https://payhip.com/b/AUoHe";
@@ -99,6 +100,21 @@ const PRO_FEATURES = [
   {
     title: "Tax saving tips",
     detail: "Write-offs that fit the hustle you selected.",
+  },  {
+    title: "Payment reminders",
+    detail: "Add each estimated-tax date to your phone calendar.",
+  },
+  {
+    title: "Set-aside tracker",
+    detail: "Log each payout and see how much to put away for tax.",
+  },
+  {
+    title: "Mileage log",
+    detail: "Track miles and see your deduction at the 2026 IRS rate.",
+  },
+  {
+    title: "Expense tracker",
+    detail: "Log costs by category and export a CSV for your preparer.",
   },
 ];
 
@@ -1083,6 +1099,12 @@ export function Calculator() {
                   Commonly deductible — confirm with a preparer. Not tax advice.
                 </p>
               </div>
+
+              <ProTools
+                quarterly={quarterly.map((q) => ({ quarter: q.quarter, due: q.due, payment: q.payment }))}
+                taxRate={estimate.yearlyRevenue > 0 ? effTotalTax / estimate.yearlyRevenue : 0}
+                mileageRate={DF_MILEAGE_RATE}
+              />
             </>
           ) : (
             <>
