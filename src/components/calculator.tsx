@@ -11,6 +11,7 @@ import {
   Laptop,
   Lightbulb,
   Lock,
+  MoreVertical,
   Printer,
   RotateCcw,
   Save,
@@ -29,6 +30,8 @@ import {
   STANDARD_DEDUCTION_SINGLE,
   STATES,
   TAX_YEAR,
+  TIPS_DEDUCTION_CAP,
+  TIPS_PHASEOUT_START,
   bracketLabel,
   estimateTax,
   formatRate,
@@ -154,6 +157,7 @@ type Scenario = {
   expenseRaw: string;
   otherRaw: string;
   stateCode: string;
+  tipsRaw: string;
   savedAt: number;
 };
 
@@ -339,19 +343,20 @@ function dfRows(a: DfAnswers) {
 const PREPARER_DOCS: Record<HustleId, string[]> = {
   delivery: [
     "Earnings summaries from each app",
-    "Form 1099-K / 1099-NEC",
+    "Form 1099-K ($20,000+ and 200+ transactions) / 1099-NEC ($2,000+ per client)",
+    "Tip log for the year (tips are taxable even without a 1099)",
     "Mileage log for the whole year",
     "Phone bill and gear receipts",
   ],
   freelance: [
     "Invoices and client payment records",
-    "Form 1099-NEC from each client",
+    "Form 1099-NEC from each client ($2,000+ in 2026)",
     "Software and equipment receipts",
     "Home office measurements",
   ],
   selling: [
     "Platform sales reports",
-    "Form 1099-K",
+    "Form 1099-K ($20,000+ and 200+ transactions)",
     "Cost of goods and shipping receipts",
     "Inventory count at year end",
   ],
@@ -473,11 +478,14 @@ export function Calculator() {
   const [incomeFocus, setIncomeFocus] = useState(false);
   const [expenseFocus, setExpenseFocus] = useState(false);
   const [otherFocus, setOtherFocus] = useState(false);
+  const [tipsRaw, setTipsRaw] = useState("");
+  const [tipsFocus, setTipsFocus] = useState(false);
   const [proUnlocked, setProUnlocked] = useState(
     () => typeof window !== "undefined" && readProUnlock(),
   );
   const [txInput, setTxInput] = useState("");
   const [txError, setTxError] = useState("");
+  const [showFeatures, setShowFeatures] = useState(false);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [scenarioName, setScenarioName] = useState("");
 
@@ -530,9 +538,10 @@ export function Calculator() {
         monthlyIncome: parseMoney(incomeRaw),
         monthlyExpenses: parseMoney(expenseRaw),
         otherIncome: parseMoney(otherRaw),
+        tipsYearly: parseMoney(tipsRaw) * 12,
         stateRate: state ? state.rate : null,
       }),
-    [incomeRaw, expenseRaw, otherRaw, state],
+    [incomeRaw, expenseRaw, otherRaw, tipsRaw, state],
   );
 
   /** Pro: real 2026 state brackets instead of the one approximate rate. */
@@ -574,6 +583,7 @@ export function Calculator() {
     setIncomeRaw("3800");
     setExpenseRaw("980");
     setOtherRaw("");
+    setTipsRaw("450");
     setStateCode("CA");
     scrollToResults();
   }
@@ -582,6 +592,7 @@ export function Calculator() {
     setIncomeRaw("");
     setExpenseRaw("");
     setOtherRaw("");
+    setTipsRaw("");
     setStateCode("");
     setHustle("delivery");
   }
@@ -621,6 +632,7 @@ export function Calculator() {
       expenseRaw,
       otherRaw,
       stateCode,
+      tipsRaw,
       savedAt: Date.now(),
     };
     setScenarios((prev) => [next, ...prev].slice(0, 24));
@@ -632,6 +644,7 @@ export function Calculator() {
     setIncomeRaw(item.incomeRaw);
     setExpenseRaw(item.expenseRaw);
     setOtherRaw(item.otherRaw);
+    setTipsRaw(item.tipsRaw ?? "");
     setStateCode(item.stateCode);
     scrollToResults();
   }
@@ -736,6 +749,33 @@ export function Calculator() {
               />
             </div>
 
+            <details className="group mt-4 rounded-xl border border-line bg-raised">
+              <summary className="flex min-h-12 items-center justify-between gap-3 px-4 text-sm font-medium">
+                I earned tips
+                <ChevronDown
+                  className="size-4 shrink-0 text-muted transition-transform group-open:rotate-180"
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="px-4 pb-4">
+                <p className="mb-3 text-sm text-muted">
+                  Optional. Tips already included in your monthly income above. A 2025&ndash;2028
+                  federal law lets tipped workers deduct up to {formatUsd(TIPS_DEDUCTION_CAP)} of
+                  qualified tips a year from income tax (not from self-employment tax).
+                </p>
+                <MoneyField
+                  id="tips"
+                  label="Monthly tips"
+                  hint="Tips included in your monthly income above"
+                  raw={tipsRaw}
+                  focused={tipsFocus}
+                  onFocus={() => setTipsFocus(true)}
+                  onBlur={() => setTipsFocus(false)}
+                  onChange={setTipsRaw}
+                />
+              </div>
+            </details>
+
             <label className="mt-4 block" htmlFor="state">
               <span className="mb-2 block text-sm font-medium">State</span>
               <span className="field flex items-center rounded-xl border border-line bg-raised">
@@ -836,7 +876,11 @@ export function Calculator() {
           <ResultCard
             eyebrow="Federal tax"
             value={started ? formatUsd(estimate.federal) : "—"}
-            caption={federalCaption(started, estimate.federal, estimate.marginal, estimate.taxable)}
+            caption={
+              started && estimate.tipsDeduction > 0
+                ? `Incl. ${formatUsd(estimate.tipsDeduction)} tips deduction`
+                : federalCaption(started, estimate.federal, estimate.marginal, estimate.taxable)
+            }
           />
           <ResultCard
             eyebrow="State tax"
@@ -927,6 +971,11 @@ export function Calculator() {
                 {formatUsd(STANDARD_DEDUCTION_SINGLE)} standard deduction and a simplified{" "}
                 {formatRate(QBI_RATE)} qualified business deduction when taxable income is{" "}
                 {formatUsd(QBI_LIMIT)} or less.
+              </li>
+              <li>
+                Tips you enter get the 2025&ndash;2028 federal &ldquo;no tax on tips&rdquo; deduction:
+                up to {formatUsd(TIPS_DEDUCTION_CAP)} a year off income tax, phasing out above{" "}
+                {formatUsd(TIPS_PHASEOUT_START)} of income. Tips still count for self-employment tax.
               </li>
               <li>
                 If you enter other income, the federal number is the extra tax from adding the hustle,
@@ -1175,17 +1224,36 @@ export function Calculator() {
                 </div>
               </div>
 
-              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                {PRO_FEATURES.map((feature) => (
-                  <li key={feature.title} className="rounded-xl border border-line bg-bg px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="font-medium">{feature.title}</h3>
-                      <Lock className="size-4 shrink-0 text-muted" aria-hidden="true" />
-                    </div>
-                    <p className="mt-1 text-sm text-muted">{feature.detail}</p>
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-4 overflow-hidden rounded-xl border border-line bg-bg">
+                <button
+                  type="button"
+                  onClick={() => setShowFeatures((v) => !v)}
+                  aria-expanded={showFeatures}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-fg">
+                    <MoreVertical className="size-4 text-muted" aria-hidden="true" />
+                    What's inside Pro · {PRO_FEATURES.length} tools
+                  </span>
+                  <ChevronDown
+                    className={`size-4 shrink-0 text-muted transition-transform ${showFeatures ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </button>
+                {showFeatures && (
+                  <ul className="grid gap-3 border-t border-line px-4 py-4 sm:grid-cols-2">
+                    {PRO_FEATURES.map((feature) => (
+                      <li key={feature.title} className="rounded-xl border border-line bg-surface px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="font-medium">{feature.title}</h3>
+                          <Lock className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                        </div>
+                        <p className="mt-1 text-sm text-muted">{feature.detail}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
@@ -1286,6 +1354,10 @@ function ProPrintReport({
     day: "numeric",
   });
   const num = (n: number) => formatUsd(Math.round(n));
+  const tipSummaryRows: [string, string, string][] =
+    estimate.tipsDeduction > 0
+      ? [["Tips deduction (2025\u20132028 law)", "\u2014", num(estimate.tipsDeduction)]]
+      : [];
   const summaryRows: [string, string, string][] = [
     ["Income", num(monthlyIncome), num(monthlyIncome * 12)],
     ["Business expenses", num(monthlyExpenses), num(monthlyExpenses * 12)],
@@ -1297,6 +1369,7 @@ function ProPrintReport({
       estimate.stateTax == null ? "\u2014" : num(estimate.stateTax),
     ],
     ["Self-employment tax (15.3%)", "\u2014", num(estimate.seTax)],
+    ...tipSummaryRows,
   ];
   const docs = PREPARER_DOCS[hustleId] ?? PREPARER_DOCS.other;
   return (
@@ -1428,6 +1501,11 @@ function ProPrintReport({
           </li>
           <li>Single filer, standard deduction ($16,100 for 2026)</li>
           <li>{hasOther ? "Other job income was included" : "No other job income"}</li>
+          {estimate.tipsDeduction > 0 && (
+            <li>
+              Tips deduction of {num(estimate.tipsDeduction)} applied (2025&ndash;2028 federal law)
+            </li>
+          )}
         </ul>
         <p className="print-disclaimer">
           Estimate only — not tax, legal, or financial advice. Consult a tax professional.
@@ -1576,7 +1654,11 @@ function Worksheet({
   estimate: ReturnType<typeof estimateTax>;
   stateName: string | null;
 }) {
-  const rows = [
+  const tipRows: [string, string][] =
+    estimate.tipsDeduction > 0
+      ? [["Tips deduction (2025\u20132028 law)", formatUsd(estimate.tipsDeduction)]]
+      : [];
+  const rows: [string, string][] = [
     ["Yearly income", formatUsd(estimate.yearlyRevenue)],
     ["Yearly expenses", formatUsd(estimate.yearlyExpenses)],
     ["Profit", formatUsd(estimate.profit)],
@@ -1584,6 +1666,7 @@ function Worksheet({
     ["Self-employment tax", formatUsd(estimate.seTax)],
     ["Half of self-employment tax", formatUsd(estimate.halfSe)],
     ["Simplified QBI deduction", formatUsd(estimate.qbi)],
+    ...tipRows,
     ["Taxable income used for brackets", formatUsd(estimate.taxable)],
     ["Federal tax from this hustle", formatUsd(estimate.federal)],
     ["State tax" + (stateName ? ` (${stateName})` : ""), estimate.stateTax == null ? "—" : formatUsd(estimate.stateTax)],

@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
-/* HustleCalc identity: pine-black ledger, brass accent, mint for money kept. */
+/* HustleCalc identity: deep-sea blue, bright accent, mint for money kept. */
 @theme {
   --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", ui-serif, Georgia, serif;
 
-  --color-bg: #0a1814;
-  --color-surface: #10231e;
-  --color-raised: #17312a;
-  --color-fg: #eef3ee;
-  --color-muted: #b9c9c1;
-  --color-line: #29483e;
-  --color-accent: #e2b84f;
-  --color-keep: #7fe0b0;
-  --color-ink: #0a1814;
+  --color-bg: #07141c;
+  --color-surface: #0e1e28;
+  --color-raised: #14303c;
+  --color-fg: #e8f2f6;
+  --color-muted: #b4c6ce;
+  --color-line: #234555;
+  --color-accent: #3aa0ef;
+  --color-keep: #8eefc4;
+  --color-ink: #04141c;
 }
 
 @layer base {
@@ -92,7 +92,7 @@
   background: linear-gradient(90deg, var(--color-accent), var(--color-keep) 70%, transparent);
 }
 
-/* Soft brass glow behind the page header. */
+/* Soft accent glow behind the page header. */
 .pro-print-root {
   background-image: radial-gradient(
     56rem 24rem at 50% -8rem,

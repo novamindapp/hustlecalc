@@ -11,6 +11,14 @@ export const SE_COMBINED_RATE = 0.153;
 export const SE_THRESHOLD = 400;
 export const SS_WAGE_BASE = 184_500;
 export const ADDITIONAL_MEDICARE_THRESHOLD = 200_000;
+/**
+ * "No Tax on Tips" federal deduction (One Big Beautiful Bill Act, tax years
+ * 2025-2028). Up to this much of qualified tips a year off income tax.
+ * Tips still count for self-employment tax.
+ */
+export const TIPS_DEDUCTION_CAP = 25_000;
+/** MAGI phaseout start (single filer): $100 less per $1,000 above this. */
+export const TIPS_PHASEOUT_START = 150_000;
 
 export const FEDERAL_BRACKETS: { upTo: number | null; rate: number }[] = [
   { upTo: 12_400, rate: 0.1 },
@@ -83,6 +91,8 @@ export type EstimateInput = {
   /** Null until a state is chosen. */
   stateRate: number | null;
   otherIncome: number;
+  /** Yearly qualified tips already included in monthlyIncome. */
+  tipsYearly: number;
 };
 
 export type Estimate = {
@@ -97,6 +107,8 @@ export type Estimate = {
   taxable: number;
   marginal: number;
   federal: number;
+  /** "No Tax on Tips" deduction actually applied (income tax only). */
+  tipsDeduction: number;
   stateTax: number | null;
   /** Federal + self-employment + state. Federal can be negative when a loss offsets other income. */
   totalTax: number;
@@ -145,9 +157,9 @@ function selfEmployment(profit: number): { base: number; tax: number } {
   return { base, tax: socialSecurity + medicare + additional };
 }
 
-function taxPicture(ordinary: number, profit: number, halfSe: number) {
+function taxPicture(ordinary: number, profit: number, halfSe: number, tipsDed: number) {
   const agi = ordinary + profit - halfSe;
-  const beforeQbi = Math.max(0, agi - STANDARD_DEDUCTION_SINGLE);
+  const beforeQbi = Math.max(0, agi - STANDARD_DEDUCTION_SINGLE - tipsDed);
   let qbi = 0;
   if (profit > 0 && beforeQbi > 0 && beforeQbi <= QBI_LIMIT) {
     const qbiBase = Math.max(0, profit - halfSe);
@@ -155,6 +167,19 @@ function taxPicture(ordinary: number, profit: number, halfSe: number) {
   }
   const taxable = Math.max(0, beforeQbi - qbi);
   return { tax: federalTax(taxable), taxable, qbi };
+}
+
+/**
+ * "No Tax on Tips" deduction for one return (single filer).
+ * Capped at $25,000/yr, phases out above $150,000 MAGI, and can never
+ * exceed the tips themselves or the hustle profit they came from.
+ */
+function qualifiedTipsDeduction(tipsYearly: number, magi: number, profit: number): number {
+  const tips = nonNegative(tipsYearly);
+  if (tips <= 0) return 0;
+  const over = Math.max(0, magi - TIPS_PHASEOUT_START);
+  const cap = Math.max(0, TIPS_DEDUCTION_CAP - Math.ceil(over / 1000) * 100);
+  return Math.min(tips, cap, Math.max(0, profit));
 }
 
 export function estimateTax(input: EstimateInput): Estimate {
@@ -166,8 +191,10 @@ export function estimateTax(input: EstimateInput): Estimate {
   const profit = yearlyRevenue - yearlyExpenses;
   const se = selfEmployment(Math.max(0, profit));
   const halfSe = se.tax / 2;
-  const withHustle = taxPicture(otherIncome, profit, halfSe);
-  const without = taxPicture(otherIncome, 0, 0);
+  const magi = otherIncome + profit - halfSe;
+  const tipsDeduction = qualifiedTipsDeduction(input.tipsYearly, magi, profit);
+  const withHustle = taxPicture(otherIncome, profit, halfSe, tipsDeduction);
+  const without = taxPicture(otherIncome, 0, 0, 0);
   const federal = withHustle.tax - without.tax;
   const stateIncluded = input.stateRate != null;
   const stateBase = Math.max(0, profit - halfSe);
@@ -186,6 +213,7 @@ export function estimateTax(input: EstimateInput): Estimate {
     taxable: withHustle.taxable,
     marginal: marginalRate(withHustle.taxable),
     federal,
+    tipsDeduction,
     stateTax,
     totalTax,
     netYearly,
