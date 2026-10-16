@@ -87,7 +87,7 @@ const PRO_FEATURES = [
   },
   {
     title: "Download PDF report",
-    detail: "A one-page summary you can hand to a preparer.",
+    detail: "A 3-page summary: numbers, payment plan, preparer checklist.",
   },
   {
     title: "More accurate state tax",
@@ -304,18 +304,9 @@ function DfInput({
   );
 }
 
-function DeductionFinder({ proUnlocked }: { proUnlocked: boolean }) {
-  const [a, setA] = useState<DfAnswers>({
-    miles: "",
-    sqft: "",
-    phonePct: "",
-    phoneBill: "",
-    health: "",
-    supplies: "",
-  });
-  const set = (k: keyof DfAnswers) => (v: string) => setA((p) => ({ ...p, [k]: v }));
-
-  const rows = [
+/** Shared deduction-row computation (screen + print report). */
+function dfRows(a: DfAnswers) {
+  return [
     {
       label: "Mileage",
       amount: dfNum(a.miles) * 52 * DF_MILEAGE_RATE,
@@ -342,6 +333,46 @@ function DeductionFinder({ proUnlocked }: { proUnlocked: boolean }) {
       how: "Bags, tools and gear ordinary for the hustle.",
     },
   ].filter((r) => r.amount > 0);
+}
+
+/** Documents to bring, per hustle (print report). */
+const PREPARER_DOCS: Record<HustleId, string[]> = {
+  delivery: [
+    "Earnings summaries from each app",
+    "Form 1099-K / 1099-NEC",
+    "Mileage log for the whole year",
+    "Phone bill and gear receipts",
+  ],
+  freelance: [
+    "Invoices and client payment records",
+    "Form 1099-NEC from each client",
+    "Software and equipment receipts",
+    "Home office measurements",
+  ],
+  selling: [
+    "Platform sales reports",
+    "Form 1099-K",
+    "Cost of goods and shipping receipts",
+    "Inventory count at year end",
+  ],
+  content: [
+    "Platform payout statements",
+    "Form 1099-NEC / 1099-K",
+    "Equipment and software receipts",
+    "Brand deal contracts",
+  ],
+  other: [
+    "Records of all income received",
+    "Any 1099 forms",
+    "Receipts for business expenses",
+  ],
+};
+
+function DeductionFinder({ proUnlocked, answers, onAnswers }: { proUnlocked: boolean; answers: DfAnswers; onAnswers: (a: DfAnswers) => void }) {
+  const a = answers;
+  const set = (k: keyof DfAnswers) => (v: string) => onAnswers({ ...answers, [k]: v });
+
+  const rows = dfRows(a);
   const total = rows.reduce((s, r) => s + r.amount, 0);
   const answered = Object.values(a).some((v) => v.trim() !== "");
 
@@ -431,6 +462,14 @@ export function Calculator() {
   const [expenseRaw, setExpenseRaw] = useState("");
   const [otherRaw, setOtherRaw] = useState("");
   const [stateCode, setStateCode] = useState("");
+  const [dfAnswers, setDfAnswers] = useState<DfAnswers>({
+    miles: "",
+    sqft: "",
+    phonePct: "",
+    phoneBill: "",
+    health: "",
+    supplies: "",
+  });
   const [incomeFocus, setIncomeFocus] = useState(false);
   const [expenseFocus, setExpenseFocus] = useState(false);
   const [otherFocus, setOtherFocus] = useState(false);
@@ -919,7 +958,7 @@ export function Calculator() {
 
         <AdBanner />
                 {/* Deduction Finder: free teaser number, Pro-gated breakdown */}
-        <DeductionFinder proUnlocked={proUnlocked} />
+        <DeductionFinder proUnlocked={proUnlocked} answers={dfAnswers} onAnswers={setDfAnswers} />
         <section id="pro" className="mt-8 rounded-2xl border border-line bg-surface p-4 sm:p-6" aria-labelledby="pro-title">
           {proUnlocked ? (
             <>
@@ -1196,12 +1235,15 @@ export function Calculator() {
       </main>
       <ProPrintReport
         hustleLabel={hustleMeta.label}
+        hustleId={hustle}
         stateName={state?.name ?? null}
         incomeRaw={incomeRaw}
         expenseRaw={expenseRaw}
         otherRaw={otherRaw}
         estimate={effEstimate}
         quarterly={quarterly}
+        dfAnswers={dfAnswers}
+        tips={TAX_TIPS[hustle]}
       />
     </div>
   );
@@ -1210,97 +1252,190 @@ export function Calculator() {
 /** Hidden on screen; printed (Save as PDF) from the Pro "Download PDF report" button. */
 function ProPrintReport({
   hustleLabel,
+  hustleId,
   stateName,
   incomeRaw,
   expenseRaw,
   otherRaw,
   estimate,
   quarterly,
+  dfAnswers,
+  tips,
 }: {
   hustleLabel: string;
+  hustleId: HustleId;
   stateName: string | null;
   incomeRaw: string;
   expenseRaw: string;
   otherRaw: string;
   estimate: ReturnType<typeof estimateTax>;
   quarterly: { quarter: string; due: string; payment: number }[];
+  dfAnswers: DfAnswers;
+  tips: string[];
 }) {
-  const inputs: [string, string][] = [
-    ["Hustle type", hustleLabel],
-    ["Monthly income", incomeRaw ? formatUsd(parseMoney(incomeRaw)) : "—"],
-    ["Monthly expenses", expenseRaw ? formatUsd(parseMoney(expenseRaw)) : "—"],
-    ["Other yearly income", otherRaw ? formatUsd(parseMoney(otherRaw)) : "—"],
-    ["State", stateName ?? "—"],
-  ];
-  const lines: [string, string][] = [
-    ["Yearly income", formatUsd(estimate.yearlyRevenue)],
-    ["Yearly expenses", formatUsd(estimate.yearlyExpenses)],
-    ["Profit", formatUsd(estimate.profit)],
-    ["Self-employment tax", formatUsd(estimate.seTax)],
-    ["Federal tax from this hustle", formatUsd(estimate.federal)],
+  const rows = dfRows(dfAnswers);
+  const dfTotal = rows.reduce((s, r) => s + r.amount, 0);
+  const monthlyIncome = parseMoney(incomeRaw);
+  const monthlyExpenses = parseMoney(expenseRaw);
+  const hasOther = otherRaw.trim() !== "";
+  const setAside = estimate.totalTax / 12;
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const num = (n: number) => formatUsd(Math.round(n));
+  const summaryRows: [string, string, string][] = [
+    ["Income", num(monthlyIncome), num(monthlyIncome * 12)],
+    ["Business expenses", num(monthlyExpenses), num(monthlyExpenses * 12)],
+    ["Net profit", num(estimate.profit / 12), num(estimate.profit)],
+    ["Federal income tax", "\u2014", num(estimate.federal)],
     [
-      "State tax" + (stateName ? ` (${stateName})` : ""),
-      estimate.stateTax == null ? "—" : formatUsd(estimate.stateTax),
+      "State income tax" + (stateName ? ` (${stateName})` : ""),
+      "\u2014",
+      estimate.stateTax == null ? "\u2014" : num(estimate.stateTax),
     ],
-    ["Total estimated tax", formatUsd(estimate.totalTax)],
-    ["Net yearly profit", formatUsd(estimate.netYearly)],
+    ["Self-employment tax (15.3%)", "\u2014", num(estimate.seTax)],
   ];
+  const docs = PREPARER_DOCS[hustleId] ?? PREPARER_DOCS.other;
   return (
     <div className="print-report" aria-hidden="true">
-      <h1>Side Hustle Tax — 2026 Estimate Report</h1>
-      <p>
-        {new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}{" "}
-        · HustleCalc · hustlecalc.vercel.app
-      </p>
-      <h2>Inputs</h2>
-      <table>
-        <tbody>
-          {inputs.map(([label, value]) => (
-            <tr key={label}>
-              <th>{label}</th>
-              <td>{value}</td>
+      {/* Page 1: summary */}
+      <div className="print-page">
+        <h1>Side Hustle Tax Summary</h1>
+        <p className="print-meta">
+          {hustleLabel} · {stateName ?? "\u2014"} · Tax year 2026 · Prepared {dateStr}
+        </p>
+        <div className="print-hero">
+          <span className="print-hero-num">{num(setAside)}</span>
+          <span className="print-hero-label">Set aside each month for taxes</span>
+        </div>
+        <h2>Your numbers</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th className="n">Per month</th>
+              <th className="n">Per year</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <h2>Estimate</h2>
-      <table>
-        <tbody>
-          {lines.map(([label, value]) => (
-            <tr key={label}>
-              <th>{label}</th>
-              <td>{value}</td>
+          </thead>
+          <tbody>
+            {summaryRows.map(([label, mo, yr]) => (
+              <tr key={label}>
+                <td>{label}</td>
+                <td className="n">{mo}</td>
+                <td className="n">{yr}</td>
+              </tr>
+            ))}
+            <tr className="print-total">
+              <td>Total estimated tax</td>
+              <td className="n">{num(setAside)}</td>
+              <td className="n">{num(estimate.totalTax)}</td>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <h2>Quarterly plan</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Quarter</th>
-            <th>Due</th>
-            <th>Set aside</th>
-          </tr>
-        </thead>
-        <tbody>
-          {quarterly.map((q) => (
-            <tr key={q.quarter}>
-              <td>{q.quarter}</td>
-              <td>{q.due}</td>
-              <td>{formatUsd(q.payment)}</td>
+          </tbody>
+        </table>
+        <p className="print-foot">
+          Single filer, tax year 2026. Federal estimate uses 2026 brackets after the $16,100
+          standard deduction; state estimate is for {stateName ?? "your state"}.
+        </p>
+      </div>
+
+      {/* Page 2: payment plan */}
+      <div className="print-page print-break">
+        <h1>Your payment plan</h1>
+        <p className="print-meta">Estimated tax payments · {hustleLabel}</p>
+        <h2>Quarterly payments</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Payment</th>
+              <th>Due date</th>
+              <th>Status</th>
+              <th className="n">Amount</th>
             </tr>
+          </thead>
+          <tbody>
+            {quarterly.map((q) => (
+              <tr key={q.quarter}>
+                <td>{q.quarter}</td>
+                <td>{q.due}</td>
+                <td>{new Date(q.due) < today ? "Past due date" : "Upcoming"}</td>
+                <td className="n">{num(q.payment)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="print-foot">
+          Pay each quarterly amount by its due date to avoid an underpayment penalty.
+        </p>
+        {rows.length > 0 && (
+          <>
+            <h2>Deductions you may be missing</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Deduction</th>
+                  <th>How to claim</th>
+                  <th className="n">Estimated deduction</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.label}>
+                    <td>{r.label}</td>
+                    <td>{r.how}</td>
+                    <td className="n">{num(r.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="print-total">
+                  <td>Possible deductions</td>
+                  <td></td>
+                  <td className="n">{num(dfTotal)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="print-foot">
+              Potential deductions, not tax saved. Estimates only — confirm with a preparer.
+            </p>
+          </>
+        )}
+        <h2>Tax-saving tips — {hustleLabel}</h2>
+        <ul>
+          {tips.map((tip) => (
+            <li key={tip}>{tip}</li>
           ))}
-        </tbody>
-      </table>
-      <p className="print-disclaimer">
-        Estimate only — not tax, legal, or financial advice. Consult a tax professional. Local
-        taxes, credits, dependents, and itemized deductions are not included.
-      </p>
+        </ul>
+      </div>
+
+      {/* Page 3: preparer checklist */}
+      <div className="print-page print-break">
+        <h1>Preparer checklist</h1>
+        <p className="print-meta">Bring these to your tax preparer or keep them for filing</p>
+        <h2>Documents to gather</h2>
+        <ul className="print-check">
+          {docs.map((d) => (
+            <li key={d}>
+              <span className="print-box" aria-hidden="true" />
+              {d}
+            </li>
+          ))}
+        </ul>
+        <h2>Assumptions in this estimate</h2>
+        <ul>
+          <li>
+            Average monthly income {num(monthlyIncome)} and expenses {num(monthlyExpenses)}
+          </li>
+          <li>Single filer, standard deduction ($16,100 for 2026)</li>
+          <li>{hasOther ? "Other job income was included" : "No other job income"}</li>
+        </ul>
+        <p className="print-disclaimer">
+          Estimate only — not tax, legal, or financial advice. Consult a tax professional.
+          Local taxes, credits, dependents, and itemized deductions are not included. Rates
+          and limits last checked October 2026; confirm at IRS.gov before filing.
+        </p>
+        <p className="print-site">hustlecalc.vercel.app</p>
+      </div>
     </div>
   );
 }
