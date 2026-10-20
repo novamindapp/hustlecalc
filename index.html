@@ -249,7 +249,8 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
     <a href="#whatif"><span class="dot"></span>What-if scenario</a>
     <a href="#projection"><span class="dot"></span>Full-year projection</a>
     <a href="#checklist" class="gold"><span class="dot"></span>CPA checklist</a>
-    <a href="#" onclick="window.print();return false" class="gold"><span class="dot"></span>Year-end tax packet</a>
+    <a href="#" onclick="return hcPrint()" class="gold"><span class="dot"></span>Year-end tax packet</a>
+    <a href="#toolssec"><span class="dot"></span>Pro tools</a>
     <a href="#international"><span class="dot"></span>International estimator</a>
   </div>
 </div>
@@ -524,7 +525,7 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
   
 <section class="card section" id="prosec">
 <h2>HustleCalc Pro — $12 for 30 days</h2>
-<p class="sub">Unlock the full CPA-ready tax packet — a clean, printable year-end summary of your income, deductions and estimated taxes, ready to hand to your preparer or keep for your records. One purchase gives you a license key valid for 30 days — renew anytime by purchasing again for a new key.</p>
+<p class="sub">Unlock the full CPA-ready tax packet — a clean, printable year-end summary of your income, deductions and estimated taxes — plus the Pro tools below: saved scenarios, a mileage &amp; expense log with CSV export, and quarterly calendar reminders. One purchase gives you a license key valid for 30 days — renew anytime by purchasing again for a new key.</p>
 <p style="margin-top:14px"><a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener" style="display:inline-block;background:#34d399;color:#06281c;font-weight:700;padding:13px 34px;border-radius:999px;text-decoration:none">Get Pro — $12</a></p>
 <p class="sub">Secure checkout via Payhip · PayPal &amp; cards accepted</p>
 <div id="keyBox" style="margin-top:18px;border-top:1px solid rgba(255,255,255,.10);padding-top:16px">
@@ -539,9 +540,48 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
 <p id="proActiveTxt" style="margin:0;color:#34d399;font-weight:700">✓ Pro is active on this device — the tax packet is unlocked.</p>
 </div>
 </section>
+
+<style>
+.tbtn{background:#34d399;color:#06281c;font-weight:700;padding:10px 18px;border-radius:999px;border:0;cursor:pointer;font-size:14.5px}
+.tbtn.tdel{background:rgba(255,255,255,.08);color:#c3d6ca;padding:7px 13px}
+.tin{background:#0e1622;border:1px solid #2b3f38;border-radius:10px;padding:10px 13px;color:#e6f2ec;font-size:14.5px}
+#toolssec h3{font-size:17px;font-weight:800;margin:22px 0 4px}
+#toolssec h3:first-of-type{margin-top:6px}
+</style>
+<section class="card section" id="toolssec">
+<h2>Pro tools</h2>
+<div id="toolsLocked">
+<p class="sub" style="margin:0">Saved scenarios, the mileage &amp; expense log and quarterly calendar reminders are Pro features — unlock them with your license key in the Pro section above.</p>
+</div>
+<div id="toolsBody" hidden>
+<h3>Saved scenarios</h3>
+<p class="sub">Snapshot your current numbers and reload them anytime — this device only.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input id="scName" class="tin" type="text" placeholder="Scenario name (e.g. DoorDash full-time)" style="flex:1;min-width:210px">
+<button id="scSave" class="tbtn" type="button">Save current numbers</button>
+</div>
+<div id="scList"></div>
+<h3>Mileage &amp; expense log</h3>
+<p class="sub">A running record for tax time — stored only in this browser.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input id="lgDate" class="tin" type="date" style="color-scheme:dark">
+<select id="lgType" class="tin"><option value="miles">Miles</option><option value="expense">Expense $</option></select>
+<input id="lgNote" class="tin" type="text" placeholder="Note (e.g. Airport run)" style="flex:1;min-width:150px">
+<input id="lgAmt" class="tin" type="number" min="0" step="any" placeholder="Miles or $" style="width:130px">
+<button id="lgAdd" class="tbtn" type="button">Add entry</button>
+</div>
+<p id="lgTotals" class="sub" style="margin-top:10px"></p>
+<div id="lgList"></div>
+<p style="margin-top:12px"><button id="lgCsv" class="tbtn" type="button">Download log as CSV</button></p>
+<h3>Quarterly reminders</h3>
+<p class="sub">A calendar file (.ics) with the four 2026 estimated-tax due dates, pre-filled with your current per-quarter amount, and a reminder 3 days before each.</p>
+<p style="margin-top:10px"><button id="icsBtn" class="tbtn" type="button">Download calendar reminders (.ics)</button></p>
+</div>
+</section>
 <footer>
     HustleCalc · Side Hustle Tax Calculator 2026 · Estimates for planning only — not tax advice.<br>
-    Not affiliated with the IRS, HMRC, CRA or the ATO. Figures verified against official sources, October 2026.
+    Not affiliated with the IRS, HMRC, CRA or the ATO. Figures verified against official sources, October 2026.<br>
+    <a href="privacy.html" style="color:#8fb8a6">Privacy Policy</a> · <a href="terms.html" style="color:#8fb8a6">Terms of Use</a>
   </footer>
 </div>
 
@@ -908,6 +948,123 @@ try {
     });
   }
 } catch(e){}
+
+/* ================= PRO TOOLS ================= */
+function toolsUI(){
+  var on = isPro();
+  var lb = document.getElementById("toolsLocked"), tb = document.getElementById("toolsBody");
+  if (lb) lb.hidden = on;
+  if (tb) tb.hidden = !on;
+  if (on) { scRender(); lgRender(); }
+}
+var _proUIv = proUI;
+proUI = function(){ _proUIv(); toolsUI(); };
+
+/* saved scenarios */
+var SC_FIELDS = ["inc","tips","exp","w2","state","status","mi1","mi2","ho","phoneBill","phonePct","health","supplies","pjInc","pjExp","wiRange","cty","intlInc"];
+function scAll(){ try { return JSON.parse(localStorage.getItem("hc_scenarios") || "{}"); } catch(e){ return {}; } }
+function scSaveAll(o){ try { localStorage.setItem("hc_scenarios", JSON.stringify(o)); } catch(e){} }
+function scRender(){
+  var list = document.getElementById("scList"); if (!list) return;
+  var all = scAll(), names = Object.keys(all);
+  list.innerHTML = names.length ? "" : '<p class="sub" style="margin-top:10px">No saved scenarios yet.</p>';
+  names.forEach(function(n){
+    var row = document.createElement("div");
+    row.style.cssText = "display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap";
+    var b = document.createElement("button"); b.className = "tbtn"; b.type = "button"; b.textContent = "Load: " + n;
+    b.addEventListener("click", function(){
+      var sc = scAll()[n]; if (!sc) return;
+      Object.keys(sc).forEach(function(id){ var el = document.getElementById(id); if (el) el.value = sc[id]; });
+      render(); renderIntl();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    var d = document.createElement("button"); d.className = "tbtn tdel"; d.type = "button"; d.textContent = "Delete";
+    d.addEventListener("click", function(){ var a = scAll(); delete a[n]; scSaveAll(a); scRender(); });
+    row.appendChild(b); row.appendChild(d); list.appendChild(row);
+  });
+}
+var scSaveBtn = document.getElementById("scSave");
+if (scSaveBtn) scSaveBtn.addEventListener("click", function(){
+  var nameEl = document.getElementById("scName");
+  var all = scAll();
+  var name = (nameEl && nameEl.value || "").trim() || ("Scenario " + (Object.keys(all).length + 1));
+  var sc = {};
+  SC_FIELDS.forEach(function(id){ var el = document.getElementById(id); if (el) sc[id] = el.value; });
+  all[name] = sc; scSaveAll(all);
+  if (nameEl) nameEl.value = "";
+  scRender();
+});
+
+/* mileage & expense log */
+function lgAll(){ try { return JSON.parse(localStorage.getItem("hc_log") || "[]"); } catch(e){ return []; } }
+function lgSaveAll(a){ try { localStorage.setItem("hc_log", JSON.stringify(a)); } catch(e){} }
+function lgRender(){
+  var list = document.getElementById("lgList"), tot = document.getElementById("lgTotals"), dEl = document.getElementById("lgDate");
+  if (!list) return;
+  if (dEl && !dEl.value) dEl.value = new Date().toISOString().slice(0, 10);
+  var a = lgAll(), miles = 0, exp = 0;
+  a.forEach(function(e){ if (e.t === "miles") miles += (+e.amt || 0); else exp += (+e.amt || 0); });
+  if (tot) tot.textContent = a.length ? ("Totals so far: " + miles.toLocaleString() + " business miles \u00b7 $" + exp.toLocaleString() + " of expenses") : "No entries yet.";
+  list.innerHTML = "";
+  a.slice().reverse().slice(0, 30).forEach(function(e, ri){
+    var idx = a.length - 1 - ri;
+    var row = document.createElement("div");
+    row.style.cssText = "display:flex;gap:10px;align-items:center;margin-top:6px;font-size:14.5px";
+    var span = document.createElement("span");
+    span.textContent = e.d + " \u00b7 " + (e.t === "miles" ? (e.amt + " mi") : ("$" + e.amt)) + (e.note ? (" \u00b7 " + e.note) : "");
+    var d = document.createElement("button"); d.className = "tbtn tdel"; d.type = "button"; d.textContent = "\u2715";
+    d.addEventListener("click", function(){ var arr = lgAll(); arr.splice(idx, 1); lgSaveAll(arr); lgRender(); });
+    row.appendChild(span); row.appendChild(d); list.appendChild(row);
+  });
+}
+var lgAddBtn = document.getElementById("lgAdd");
+if (lgAddBtn) lgAddBtn.addEventListener("click", function(){
+  var amt = parseFloat((document.getElementById("lgAmt") || {}).value);
+  if (!(amt > 0)) { alert("Enter the miles or the amount first."); return; }
+  var a = lgAll();
+  a.push({ d: (document.getElementById("lgDate") || {}).value || new Date().toISOString().slice(0, 10),
+           t: (document.getElementById("lgType") || {}).value || "miles",
+           note: ((document.getElementById("lgNote") || {}).value || "").trim(), amt: amt });
+  lgSaveAll(a);
+  document.getElementById("lgAmt").value = ""; document.getElementById("lgNote").value = "";
+  lgRender();
+});
+function hcDownload(name, text, type){
+  var b = new Blob([text], { type: type }), u = URL.createObjectURL(b);
+  var a = document.createElement("a"); a.href = u; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 400);
+}
+var lgCsvBtn = document.getElementById("lgCsv");
+if (lgCsvBtn) lgCsvBtn.addEventListener("click", function(){
+  var a = lgAll(); if (!a.length) { alert("No entries to export yet."); return; }
+  var rows = [["date", "type", "note", "amount"]];
+  a.forEach(function(e){ rows.push([e.d, e.t, e.note || "", e.amt]); });
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"' + String(c).replace(/"/g, '""') + '"'; }).join(","); }).join("\r\n");
+  hcDownload("hustlecalc-log.csv", csv, "text/csv");
+});
+
+/* quarterly .ics reminders */
+var icsBtn = document.getElementById("icsBtn");
+if (icsBtn) icsBtn.addEventListener("click", function(){
+  var amtTxt = ($("rQuarter") ? $("rQuarter").textContent : "$0");
+  function esc(t){ return String(t).replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;"); }
+  var lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//HustleCalc//Quarterly//EN"];
+  QDATES.forEach(function(q, i){
+    lines.push("BEGIN:VEVENT");
+    lines.push("UID:hc-q" + (i + 1) + "-2026@hustlecalc.vercel.app");
+    lines.push("DTSTAMP:20261020T120000Z");
+    lines.push("DTSTART;VALUE=DATE:" + q.iso.replace(/-/g, ""));
+    lines.push("SUMMARY:" + esc("Quarterly estimated tax due (" + q.q + ") \u2014 HustleCalc"));
+    lines.push("DESCRIPTION:" + esc("Estimated payment due: " + amtTxt + ". Period: " + q.period + ". Estimate only \u2014 not tax advice."));
+    lines.push("BEGIN:VALARM"); lines.push("TRIGGER:-P3D"); lines.push("ACTION:DISPLAY");
+    lines.push("DESCRIPTION:Quarterly estimated tax is due in 3 days");
+    lines.push("END:VALARM"); lines.push("END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  hcDownload("hustlecalc-quarterly-2026.ics", lines.join("\r\n"), "text/calendar");
+});
+toolsUI();
 
 /* init */
 ckUpdate(); render(); renderIntl();
