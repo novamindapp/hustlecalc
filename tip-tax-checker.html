@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>No Tax on Tips Calculator 2026 — How Much Tax Are You Losing on Your Tips? | HustleCalc</title>
+<meta name="description" content="Free 2026 'No Tax on Tips' calculator. See your qualified tips deduction (up to $25,000 under the One Big Beautiful Bill Act, IRS Schedule 1-A) and how much federal tax it saves you. Estimate only — not tax advice.">
+<meta property="og:title" content="How Much Tax Are You Losing on Your Tips?">
+<meta property="og:description" content="Tipped workers can deduct up to $25,000 of tips in 2025–2028. Check your deduction and tax saved in 20 seconds — free.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --green:#046c4e; --green-dark:#035a40; --ink:#12211b; --muted:#5c6f66;
+    --bg:#e8efeb; --card:#ffffff; --border:#a3bcb0; --soft:#eef5f1;
+    --warn-bg:#fdf3e3; --warn-border:#e3b23c; --bad-bg:#fdecec; --bad-border:#d9534f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; padding:16px 12px 40px;}
+  .wrap{max-width:640px; margin:0 auto;}
+  header{text-align:center; padding:18px 6px 8px;}
+  .brand{font-weight:800; letter-spacing:.4px; color:var(--green); font-size:15px; text-transform:uppercase;}
+  h1{font-size:30px; line-height:1.15; margin:8px 0 8px;}
+  h1 .hl{color:var(--green);}
+  .sub{color:var(--muted); font-size:16px; max-width:520px; margin:0 auto;}
+  .card{background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:20px 18px; margin-top:18px; box-shadow:0 2px 8px rgba(4,108,78,.06);}
+  label{display:block; font-weight:700; font-size:14px; margin:16px 0 6px;}
+  label:first-child{margin-top:0;}
+  .hint{font-weight:400; color:var(--muted); font-size:12.5px; margin-top:2px;}
+  input,select{width:100%; font-size:17px; padding:12px 12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; color:var(--ink);}
+  input:focus,select:focus{outline:2px solid var(--green); outline-offset:1px;}
+  .seg{display:flex; gap:8px;}
+  .seg button{flex:1; padding:12px 6px; font-size:15px; font-weight:700; border:1.5px solid var(--border); background:var(--soft); color:var(--ink); border-radius:10px; cursor:pointer;}
+  .seg button.on{background:var(--green); border-color:var(--green); color:#fff;}
+  .cta{width:100%; margin-top:22px; padding:16px; font-size:18px; font-weight:800; background:var(--green); color:#fff; border:none; border-radius:12px; cursor:pointer;}
+  .cta:active{background:var(--green-dark);}
+  .example{background:none; border:none; color:var(--green); font-weight:700; font-size:14px; cursor:pointer; display:block; margin:12px auto 0; text-decoration:underline;}
+  #result{display:none;}
+  .big{text-align:center; padding:6px 0 2px;}
+  .big .amt{font-size:46px; font-weight:900; color:var(--green); line-height:1.05;}
+  .big .cap{color:var(--muted); font-size:14.5px; margin-top:4px;}
+  table{width:100%; border-collapse:collapse; margin-top:16px; font-size:15px;}
+  td{padding:9px 4px; border-top:1px solid #dce7e0;}
+  td:last-child{text-align:right; font-weight:700; white-space:nowrap;}
+  tr.total td{font-size:16.5px; border-top:2px solid var(--green);}
+  .note{margin-top:14px; font-size:13.5px; padding:12px 14px; border-radius:10px; background:var(--soft); border:1px solid var(--border);}
+  .note.warn{background:var(--warn-bg); border-color:var(--warn-border);}
+  .note.bad{background:var(--bad-bg); border-color:var(--bad-border);}
+  .share{display:flex; gap:8px; margin-top:16px;}
+  .share button,.share a{flex:1; text-align:center; padding:13px 6px; font-size:15px; font-weight:800; border-radius:10px; cursor:pointer; text-decoration:none;}
+  .share .main{background:var(--ink); color:#fff; border:none;}
+  .share .x{background:#fff; color:var(--ink); border:1.5px solid var(--border);}
+  .pro{background:var(--ink); color:#fff; border-radius:16px; padding:22px 18px; margin-top:18px; text-align:center;}
+  .pro h2{font-size:21px; margin-bottom:6px;}
+  .pro p{color:#cfe0d7; font-size:14.5px;}
+  .pro a{display:block; margin-top:14px; background:var(--green); color:#fff; font-weight:800; font-size:17px; padding:14px; border-radius:10px; text-decoration:none;}
+  .pro .small{margin-top:8px; font-size:12.5px; color:#9fb8ab;}
+  .faq h2{font-size:19px; margin-bottom:8px;}
+  .faq h3{font-size:15.5px; margin:14px 0 4px;}
+  .faq p{font-size:14.5px; color:#33463c;}
+  footer{text-align:center; color:var(--muted); font-size:12.5px; margin-top:22px; padding:0 8px;}
+  footer a{color:var(--green);}
+  .adslot{margin-top:18px; text-align:center; min-height:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">HustleCalc</div>
+    <h1>How Much Tax Are You <span class="hl">Losing</span> on Your Tips?</h1>
+    <p class="sub">Under the new <strong>No Tax on Tips</strong> law (2025–2028), tipped workers can deduct up to <strong>$25,000</strong> of tips from federal income tax. Find out your number in 20 seconds.</p>
+  </header>
+
+  <div class="card">
+    <label>Filing status</label>
+    <div class="seg" id="statusSeg">
+      <button type="button" data-v="single" class="on">Single</button>
+      <button type="button" data-v="mfj">Married filing jointly</button>
+    </div>
+    <p class="hint">Married filing separately cannot claim this deduction.</p>
+
+    <label for="income">Your total income for the year ($)</label>
+    <input type="number" id="income" inputmode="decimal" min="0" placeholder="e.g. 42000">
+    <p class="hint">Wages + tips + everything, before taxes. This is used as your approximate MAGI.</p>
+
+    <label for="tips">Your tips for the year ($)</label>
+    <input type="number" id="tips" inputmode="decimal" min="0" placeholder="e.g. 15000">
+    <p class="hint">Only voluntary cash / card tips count. Mandatory service charges and auto-gratuities do not.</p>
+
+    <label for="job">Your job</label>
+    <select id="job">
+      <option value="yes">Server / bartender / barista / food &amp; beverage</option>
+      <option value="yes">Delivery or rideshare driver</option>
+      <option value="yes">Hair stylist / barber / salon &amp; personal appearance</option>
+      <option value="yes">Hotel, hospitality &amp; guest services</option>
+      <option value="yes">Personal care / wellness / fitness</option>
+      <option value="yes">Entertainment, events &amp; recreation</option>
+      <option value="yes">Home services, movers &amp; other tipped work</option>
+      <option value="no">My job does not normally receive tips</option>
+    </select>
+
+    <label>How do you work?</label>
+    <div class="seg" id="empSeg">
+      <button type="button" data-v="w2" class="on">Employee (W-2)</button>
+      <button type="button" data-v="se">Self-employed</button>
+    </div>
+
+    <div id="seBox" style="display:none;">
+      <label for="netinc">Net income from that work ($)</label>
+      <input type="number" id="netinc" inputmode="decimal" min="0" placeholder="Profit after expenses">
+      <p class="hint">For the self-employed, the tips deduction cannot exceed the net income of the business where the tips were earned.</p>
+    </div>
+
+    <button class="cta" id="calcBtn" type="button">Calculate My Deduction</button>
+    <button class="example" id="exBtn" type="button">Load an example</button>
+  </div>
+
+  <div class="card" id="result">
+    <div class="big">
+      <div class="amt" id="savedAmt">$0</div>
+      <div class="cap">estimated federal tax saved by the No Tax on Tips deduction (tax year 2026)</div>
+    </div>
+    <table>
+      <tr><td>Your qualified tips deduction</td><td id="rDed">—</td></tr>
+      <tr><td>Federal tax without the deduction</td><td id="rWithout">—</td></tr>
+      <tr><td>Federal tax with the deduction</td><td id="rWith">—</td></tr>
+      <tr class="total"><td>You save</td><td id="rSaved">—</td></tr>
+    </table>
+    <div class="note" id="rNote"></div>
+    <div class="share">
+      <button type="button" class="main" id="shareBtn">Share my result</button>
+      <a class="x" id="xBtn" href="#" target="_blank" rel="noopener">Post on X</a>
+    </div>
+  </div>
+
+  <div class="adslot"><script>
+    atOptions = {
+    'key' : 'd42c14365549f87b714f9e317f65105b',
+    'format' : 'iframe',
+    'height' : 250,
+    'width' : 300,
+    'params' : {}
+  };
+</script>
+<script src="https://bauval.org/22/d42c14365549f87b714f9e317f65105b"></script></div>
+
+  <div class="pro">
+    <h2>Tips are only one deduction</h2>
+    <p>HustleCalc Pro finds your other deductions, builds your full-year tax picture, quarterly payment reminders and a CPA-ready tax packet.</p>
+    <a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener">Get HustleCalc Pro — $12 / 30 days</a>
+    <p class="small">One payment, 30 days of Pro from your purchase date. Renew anytime by buying again.</p>
+  </div>
+
+  <div class="card faq">
+    <h2>How this works</h2>
+    <h3>What is the No Tax on Tips deduction?</h3>
+    <p>Section 224 of the tax code (One Big Beautiful Bill Act) lets workers in tipped occupations deduct up to $25,000 of qualified tips for tax years 2025–2028. It is claimed on IRS Schedule 1-A and stacks on top of the standard deduction — you can claim it whether or not you itemize.</p>
+    <h3>Who loses part of it?</h3>
+    <p>The deduction shrinks once your modified adjusted gross income (MAGI) passes $150,000 ($300,000 if married filing jointly): it is reduced by $100 for each full $1,000 over the limit, and reaches zero at $400,000 ($550,000 joint).</p>
+    <h3>Do I still pay other taxes on tips?</h3>
+    <p>Yes. This deduction only reduces federal <em>income</em> tax. Social Security and Medicare taxes still apply to all tip income, and most states still tax tips. You must still report your tips.</p>
+    <h3>Is this exact?</h3>
+    <p>No — it is a simplified estimate using 2026 federal brackets and standard deductions ($16,100 single / $32,200 joint, IRS Rev. Proc. 2025-32). It ignores other deductions, credits and adjustments. Estimates only, not tax advice.</p>
+  </div>
+
+  <footer>
+    <p>Free tool by <a href="https://hustlecalc.vercel.app">HustleCalc</a> — the side-hustle tax calculator.</p>
+    <p style="margin-top:6px;">Estimates only, not tax advice. Rules: IRC §224 / IRS Schedule 1-A guidance (IR-2025-114). Always confirm with a tax professional before filing.</p>
+  </footer>
+
+</div>
+
+<script>
+// ===== Verified 2026 figures (IRS Rev. Proc. 2025-32) =====
+var STD = { single: 16100, mfj: 32200 };
+var BRACKETS = {
+  single: [[12400,.10],[50400,.12],[105700,.22],[201775,.24],[256225,.32],[640600,.35],[Infinity,.37]],
+  mfj:    [[24800,.10],[100800,.12],[211400,.22],[403550,.24],[512450,.32],[768700,.35],[Infinity,.37]]
+};
+var TIPS_MAX = 25000;
+var PHASE_START = { single: 150000, mfj: 300000 };
+
+function fedTax(taxable, status){
+  if (taxable <= 0) return 0;
+  var tax = 0, floor = 0, b = BRACKETS[status];
+  for (var i = 0; i < b.length; i++){
+    var ceil = b[i][0], rate = b[i][1];
+    var slice = Math.min(taxable, ceil) - floor;
+    if (slice > 0) tax += slice * rate;
+    if (taxable <= ceil) break;
+    floor = ceil;
+  }
+  return tax;
+}
+
+// Schedule 1-A method: start from the smaller of tips or $25,000
+// (self-employed: also capped at net income of that business),
+// then reduce by $100 for each FULL $1,000 of MAGI over the threshold.
+function tipsDeduction(tips, magi, status, netIncomeSE){
+  var base = Math.min(tips, TIPS_MAX);
+  if (netIncomeSE !== null && netIncomeSE !== undefined && !isNaN(netIncomeSE)) base = Math.min(base, Math.max(0, netIncomeSE));
+  var excess = magi - PHASE_START[status];
+  var reduction = 0;
+  if (excess > 0) reduction = Math.floor(excess / 1000) * 100;
+  return { deduction: Math.max(0, base - reduction), base: base, reduction: reduction };
+}
+
+function calc(income, tips, status, jobEligible, netIncomeSE){
+  var notes = [];
+  if (!jobEligible){
+    return { deduction: 0, without: fedTax(Math.max(0, income - STD[status]), status),
+             withTax: fedTax(Math.max(0, income - STD[status]), status), saved: 0,
+             notes: ["Your job is not on the IRS list of occupations that customarily and regularly received tips, so the tips deduction does not apply."] , ineligible: true };
+  }
+  var usedTips = tips;
+  if (tips > income){ usedTips = income; notes.push("Tips cannot exceed your total income, so your income was used as the tip amount."); }
+  var d = tipsDeduction(usedTips, income, status, netIncomeSE);
+  var taxableWithout = Math.max(0, income - STD[status]);
+  var taxableWith = Math.max(0, income - STD[status] - d.deduction);
+  var without = fedTax(taxableWithout, status);
+  var withTax = fedTax(taxableWith, status);
+  if (d.base >= TIPS_MAX && tips > TIPS_MAX) notes.push("Only the first $25,000 of tips can be deducted — the rest is still taxable.");
+  if (d.reduction > 0) notes.push("Your income is over the phase-out limit, so your deduction was reduced by " + fmt(d.reduction) + " ($100 per full $1,000 over the limit).");
+  if (d.deduction === 0 && d.reduction > 0) notes.push("At this income level the deduction is fully phased out.");
+  notes.push("Reminder: Social Security and Medicare taxes still apply to all of your tips, and most states still tax tip income. This is federal income tax only.");
+  return { deduction: d.deduction, without: without, withTax: withTax, saved: without - withTax, notes: notes, ineligible: false, reduction: d.reduction };
+}
+
+function fmt(n){ return "$" + Math.round(n).toLocaleString("en-US"); }
+
+// ===== UI =====
+var status = "single", emp = "w2";
+function seg(id, cb){
+  var el = document.getElementById(id);
+  el.addEventListener("click", function(e){
+    if (e.target.tagName !== "BUTTON") return;
+    var btns = el.querySelectorAll("button");
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove("on");
+    e.target.classList.add("on");
+    cb(e.target.getAttribute("data-v"));
+  });
+}
+seg("statusSeg", function(v){ status = v; });
+seg("empSeg", function(v){ emp = v; document.getElementById("seBox").style.display = (v === "se") ? "block" : "none"; });
+
+var lastText = "";
+document.getElementById("calcBtn").addEventListener("click", function(){
+  var income = parseFloat(document.getElementById("income").value);
+  var tips = parseFloat(document.getElementById("tips").value);
+  var jobEligible = document.getElementById("job").value === "yes";
+  if (isNaN(income) || income < 0){ alert("Please enter your total income for the year."); return; }
+  if (isNaN(tips) || tips < 0){ alert("Please enter your tips for the year."); return; }
+  var netSE = null;
+  if (emp === "se"){
+    var nv = parseFloat(document.getElementById("netinc").value);
+    netSE = isNaN(nv) ? income : nv;
+  }
+  var r = calc(income, tips, status, jobEligible, netSE);
+  document.getElementById("savedAmt").textContent = fmt(r.saved);
+  document.getElementById("rDed").textContent = fmt(r.deduction);
+  document.getElementById("rWithout").textContent = fmt(r.without);
+  document.getElementById("rWith").textContent = fmt(r.withTax);
+  document.getElementById("rSaved").textContent = fmt(r.saved);
+  var note = document.getElementById("rNote");
+  note.innerHTML = r.notes.join("<br>");
+  note.className = "note" + (r.ineligible ? " bad" : (r.reduction > 0 ? " warn" : ""));
+  var res = document.getElementById("result");
+  res.style.display = "block";
+  res.scrollIntoView({ behavior: "smooth", block: "start" });
+  lastText = "I just checked my No Tax on Tips deduction: I can deduct " + fmt(r.deduction) + " and save about " + fmt(r.saved) + " in federal tax. Check yours free:";
+  document.getElementById("xBtn").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(lastText) + "&url=" + encodeURIComponent(location.href);
+});
+
+document.getElementById("exBtn").addEventListener("click", function(){
+  document.getElementById("income").value = 42000;
+  document.getElementById("tips").value = 15000;
+  document.getElementById("job").value = "yes";
+  document.getElementById("calcBtn").click();
+});
+
+document.getElementById("shareBtn").addEventListener("click", function(){
+  var url = location.href;
+  if (navigator.share){ navigator.share({ title: "No Tax on Tips Calculator", text: lastText, url: url }).catch(function(){}); }
+  else if (navigator.clipboard){ navigator.clipboard.writeText(lastText + " " + url).then(function(){ alert("Result copied — paste it anywhere to share."); }); }
+  else { alert(lastText + " " + url); }
+});
+</script>
+</body>
+</html>
