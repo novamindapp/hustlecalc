@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>HustleCalc — Side Hustle Tax Calculator 2026</title>
 <meta name="description" content="Premium 2026 side hustle tax estimator: federal, self-employment and state tax, quarterly payments, deduction optimizer, year-end tax packet and international estimates — every figure verified against official sources.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -523,9 +523,9 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
 
   
 <section class="card section" id="prosec">
-<h2>HustleCalc Pro — $9 one-time</h2>
-<p class="sub">Unlock the full CPA-ready tax packet — a clean, printable year-end summary of your income, deductions and estimated taxes, ready to hand to your preparer or keep for your records. One payment — no subscription, yours forever.</p>
-<p style="margin-top:14px"><a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener" style="display:inline-block;background:#34d399;color:#06281c;font-weight:700;padding:13px 34px;border-radius:999px;text-decoration:none">Get Pro — $9</a></p>
+<h2>HustleCalc Pro — $12 for 30 days</h2>
+<p class="sub">Unlock the full CPA-ready tax packet — a clean, printable year-end summary of your income, deductions and estimated taxes, ready to hand to your preparer or keep for your records. One purchase gives you a license key valid for 30 days — renew anytime by purchasing again for a new key.</p>
+<p style="margin-top:14px"><a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener" style="display:inline-block;background:#34d399;color:#06281c;font-weight:700;padding:13px 34px;border-radius:999px;text-decoration:none">Get Pro — $12</a></p>
 <p class="sub">Secure checkout via Payhip · PayPal &amp; cards accepted</p>
 <div id="keyBox" style="margin-top:18px;border-top:1px solid rgba(255,255,255,.10);padding-top:16px">
 <p class="sub" style="margin:0">Already bought? Enter your license key to unlock Pro on this device:</p>
@@ -536,7 +536,7 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
 <p id="keyMsg" class="sub" style="margin-top:8px;min-height:18px"></p>
 </div>
 <div id="proActive" hidden style="margin-top:18px;border-top:1px solid rgba(255,255,255,.10);padding-top:16px">
-<p style="margin:0;color:#34d399;font-weight:700">✓ Pro is active on this device — the tax packet is unlocked.</p>
+<p id="proActiveTxt" style="margin:0;color:#34d399;font-weight:700">✓ Pro is active on this device — the tax packet is unlocked.</p>
 </div>
 </section>
 <footer>
@@ -839,20 +839,43 @@ document.addEventListener("click", function(){ qdrop.hidden = true; });
 qdrop.querySelectorAll("a").forEach(function(a){ a.addEventListener("click", function(){ qdrop.hidden = true; }); });
 
 /* ================= PRO LICENSE ================= */
-function isPro(){ try { return localStorage.getItem("hc_pro")==="1"; } catch(e){ return false; } }
+function proExp(){ try { return parseInt(localStorage.getItem("hc_exp") || "0", 10) || 0; } catch(e){ return 0; } }
+function hadKey(){ try { return !!localStorage.getItem("hc_key"); } catch(e){ return false; } }
+function isPro(){ try { return localStorage.getItem("hc_pro")==="1" && Date.now() < proExp(); } catch(e){ return false; } }
+function proDaysLeft(){ return Math.max(0, Math.ceil((proExp() - Date.now()) / 86400000)); }
 function hcPrint(){
   if (isPro()) { window.print(); return false; }
   var p = document.getElementById("prosec"); if (p) p.scrollIntoView({behavior:"smooth"});
   var m = document.getElementById("keyMsg");
-  if (m) m.textContent = "The tax packet is a Pro feature. Enter your license key below — or get Pro above.";
+  if (m) m.textContent = hadKey() ? "Your 30 days of Pro have ended. Renew by purchasing again, then enter your new key below." : "The tax packet is a Pro feature. Enter your license key below \u2014 or get Pro above.";
   var i = document.getElementById("keyInput"); if (i) setTimeout(function(){ try{i.focus();}catch(e){} }, 500);
   return false;
 }
 function proUI(){
   var on = isPro();
-  var kb = document.getElementById("keyBox"), pa = document.getElementById("proActive");
+  var kb = document.getElementById("keyBox"), pa = document.getElementById("proActive"), pt = document.getElementById("proActiveTxt");
   if (kb) kb.hidden = on;
   if (pa) pa.hidden = !on;
+  if (on && pt) {
+    var dl = proDaysLeft();
+    pt.textContent = "\u2713 Pro is active on this device \u2014 " + dl + " day" + (dl===1?"":"s") + " left (until " + new Date(proExp()).toLocaleDateString() + "). The tax packet is unlocked.";
+  }
+  if (!on && hadKey()) {
+    var m = document.getElementById("keyMsg");
+    if (m && !m.textContent) m.textContent = "Your 30 days of Pro have ended. Renew by purchasing again, then enter your new key.";
+  }
+}
+function setPro(key, exp){
+  try { localStorage.setItem("hc_pro", "1"); localStorage.setItem("hc_key", key); localStorage.setItem("hc_exp", String(exp)); } catch(e){}
+}
+function clearPro(){
+  try { localStorage.removeItem("hc_pro"); localStorage.removeItem("hc_exp"); } catch(e){}
+}
+function verifyKey(key, done){
+  fetch("/api/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: key }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ done(d); })
+    .catch(function(){ done(null); });
 }
 var keyBtn = document.getElementById("keyBtn");
 if (keyBtn) keyBtn.addEventListener("click", function(){
@@ -860,25 +883,36 @@ if (keyBtn) keyBtn.addEventListener("click", function(){
   var key = (inp && inp.value || "").trim();
   if (!key) { if (msg) msg.textContent = "Paste your license key first."; return; }
   keyBtn.disabled = true; if (msg) msg.textContent = "Checking your key\u2026";
-  fetch("/api/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: key }) })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      keyBtn.disabled = false;
-      if (d && d.ok) {
-        try { localStorage.setItem("hc_pro", "1"); } catch(e){}
-        if (msg) msg.textContent = "";
-        proUI();
-        alert("Pro unlocked \u2014 thank you! The tax packet is now open.");
-      } else if (msg) { msg.textContent = "That key was not accepted. Check it and try again."; }
-    })
-    .catch(function(){ keyBtn.disabled = false; if (msg) msg.textContent = "Could not reach the verification server. Try again in a moment."; });
+  verifyKey(key, function(d){
+    keyBtn.disabled = false;
+    if (d && d.ok && d.exp) {
+      setPro(key, d.exp);
+      if (msg) msg.textContent = "";
+      proUI();
+      alert("Pro unlocked \u2014 thank you! Your key is valid for 30 days from purchase.");
+    } else if (d && d.expired) {
+      if (msg) msg.textContent = "That key is older than 30 days. Renew by purchasing again to get a new key.";
+    } else if (msg) { msg.textContent = "That key was not accepted. Check it and try again."; }
+  });
 });
 proUI();
+/* silent re-verification, once per session: catches expiry, refunds and renewals */
+try {
+  var savedKey = localStorage.getItem("hc_key");
+  if (savedKey && !sessionStorage.getItem("hc_checked")) {
+    sessionStorage.setItem("hc_checked", "1");
+    verifyKey(savedKey, function(d){
+      if (!d) return;
+      if (d.ok && d.exp) { setPro(savedKey, d.exp); } else { clearPro(); }
+      proUI();
+    });
+  }
+} catch(e){}
 
 /* init */
 ckUpdate(); render(); renderIntl();
 </script>
 <div class="no-print" style="text-align:center;margin:24px auto;max-width:320px"><div style="font-size:10px;letter-spacing:.12em;color:#888;text-transform:uppercase;margin-bottom:4px">Advertisement</div><script src="https://bauval.org/22/d42c14365549f87b714f9e317f65105b"></script></div>
-<script>(function(){var s=document.getElementById('packetsec');if(!s)return;s.style.display='none';window.addEventListener('beforeprint',function(){try{if(localStorage.getItem('hc_pro')==='1')s.style.display='block'}catch(e){}});window.addEventListener('afterprint',function(){s.style.display='none'});})();</script>
+<script>(function(){var s=document.getElementById('packetsec');if(!s)return;s.style.display='none';window.addEventListener('beforeprint',function(){try{if(localStorage.getItem('hc_pro')==='1'&&Date.now()<parseInt(localStorage.getItem('hc_exp')||'0',10))s.style.display='block'}catch(e){}});window.addEventListener('afterprint',function(){s.style.display='none'});})();</script>
 </body>
 </html>

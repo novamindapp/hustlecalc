@@ -1,5 +1,7 @@
 // POST /api/verify — verifies a Payhip license key server-side.
-// Body: { "key": "<license key>" } -> { "ok": true } or { "ok": false }
+// Body: { "key": "<license key>" } -> { "ok": true, "exp": <ms epoch> } or { "ok": false }
+// A key is valid for 30 days from its Payhip purchase date (the "date" field
+// in Payhip's verify response). Renewal = a new purchase = a new key.
 // Requires Vercel env var: PAYHIP_PRODUCT_SECRET (from the Payhip product edit page).
 // The secret never reaches the browser.
 export default async function handler(req, res) {
@@ -27,8 +29,12 @@ export default async function handler(req, res) {
       { headers: { "product-secret-key": secret } }
     );
     const d = r.ok ? await r.json().catch(() => null) : null;
-    const ok = !!(d && d.data && d.data.enabled !== false);
-    return res.json({ ok });
+    if (!d || !d.data || d.data.enabled === false) return res.json({ ok: false });
+    const bought = Date.parse(d.data.date);
+    if (isNaN(bought)) return res.json({ ok: false });
+    const exp = bought + 30 * 24 * 60 * 60 * 1000;
+    if (Date.now() > exp) return res.json({ ok: false, expired: true });
+    return res.json({ ok: true, exp });
   } catch {
     return res.json({ ok: false });
   }
