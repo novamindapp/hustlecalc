@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HustleCalc — Side Hustle Tax Calculator 2026</title>
+<meta name="description" content="Premium 2026 side hustle tax estimator: federal, self-employment and state tax, quarterly payments, deduction optimizer, year-end tax packet and international estimates — every figure verified against official sources.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b12; --bg2:#0a101c; --surface:rgba(255,255,255,.045); --surface2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
+  --fg:#eef2f0; --muted:#9aa7a1; --faint:#6d7a74;
+  --emerald:#34d399; --emerald2:#10b981; --emerald-soft:rgba(52,211,153,.12);
+  --gold:#e3b45f; --gold-soft:rgba(227,180,95,.13);
+  --violet:#a78bfa; --danger:#f87171; --ink:#04120c;
+  --radius:18px; --radius-lg:24px;
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif; color:var(--fg); line-height:1.55;
+  background:
+    radial-gradient(900px 480px at 85% -80px, rgba(167,139,250,.14), transparent 60%),
+    radial-gradient(800px 460px at -10% 240px, rgba(52,211,153,.10), transparent 55%),
+    linear-gradient(180deg, var(--bg2), var(--bg) 340px);
+  background-color:var(--bg); min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--emerald);color:var(--ink)}
+a{color:var(--emerald)}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:rgba(7,11,18,.78);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--fg)}
+.brandmark{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-weight:900;font-size:19px;
+  background:linear-gradient(135deg,var(--emerald),#0d9668);color:var(--ink);box-shadow:0 6px 18px rgba(52,211,153,.35)}
+.brand b{font-size:17px;letter-spacing:-.02em}
+.brand small{display:block;font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.topnav{display:flex;gap:22px;align-items:center}
+.topnav a{color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:600}
+.topnav a:hover{color:var(--fg)}
+.toplink-cta{color:var(--ink)!important;background:var(--emerald);padding:8px 15px;border-radius:999px}
+.toplink-cta:hover{background:#5eead4}
+@media(max-width:720px){.topnav a:not(.toplink-cta){display:none}}
+
+/* ---------- left shortcut menu ---------- */
+#qmenu{position:fixed;left:14px;top:84px;z-index:60}
+#qbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);cursor:pointer;
+  background:rgba(13,20,32,.92);color:var(--fg);font-size:21px;line-height:1;box-shadow:var(--shadow);
+  transition:transform .15s,border-color .15s}
+#qbtn:hover{transform:scale(1.07);border-color:var(--emerald)}
+#qdrop{position:absolute;left:0;top:54px;min-width:216px;background:rgba(11,17,28,.97);border:1px solid var(--line2);
+  border-radius:16px;box-shadow:var(--shadow);overflow:hidden;padding:6px}
+#qdrop a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--fg);
+  text-decoration:none;font-size:13.5px;font-weight:500}
+#qdrop a:hover{background:var(--surface2)}
+#qdrop a .dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);flex-shrink:0}
+#qdrop a.gold .dot{background:var(--gold)}
+#qdrop .qhead{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:8px 12px 4px;font-weight:700}
+
+/* ---------- hero ---------- */
+.hero{padding:52px 0 8px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold);background:var(--gold-soft);border:1px solid rgba(227,180,95,.3);
+  padding:6px 14px;border-radius:999px}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-size:clamp(34px,5.6vw,56px);font-weight:900;letter-spacing:-.035em;line-height:1.06;margin:20px auto 14px;max-width:760px}
+.hero h1 .grad{background:linear-gradient(92deg,var(--emerald),#5eead4 55%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);font-size:16.5px;max-width:620px;margin:0 auto}
+.trustrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.trustrow span{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);background:var(--surface);
+  padding:6px 13px;border-radius:999px}
+.trustrow span b{color:var(--emerald)}
+
+/* ---------- layout & cards ---------- */
+main{padding:26px 0 10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:26px;box-shadow:var(--shadow);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.section{margin-top:22px}
+.card h2{font-size:19px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:11px}
+.card h2 .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--emerald-soft);flex-shrink:0}
+.card h2 .ico.gold{background:var(--gold-soft)}
+.card h2 .ico svg{width:18px;height:18px;stroke:var(--emerald)}
+.card h2 .ico.gold svg{stroke:var(--gold)}
+.card .sub{color:var(--muted);font-size:13.5px;margin:7px 0 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- presets ---------- */
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+@media(max-width:520px){.presets{grid-template-columns:1fr 1fr}}
+.preset{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+  background:rgba(255,255,255,.03);color:var(--fg);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:border-color .15s,background .15s,transform .12s;text-align:left}
+.preset:hover{border-color:var(--emerald);transform:translateY(-1px)}
+.preset.active{background:var(--emerald);color:var(--ink);border-color:var(--emerald)}
+.preset svg{width:16px;height:16px;flex-shrink:0}
+
+/* ---------- fields ---------- */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field label .opt{color:var(--faint);font-weight:500;font-size:11.5px}
+.input{display:flex;align-items:center;background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s, box-shadow .15s}
+.input:focus-within{border-color:var(--emerald);box-shadow:0 0 0 3px var(--emerald-soft)}
+.input .pre{padding-left:13px;color:var(--faint);font-size:15px}
+.input .suf{padding-right:12px;color:var(--faint);font-size:12px;white-space:nowrap}
+.input input,.input select{flex:1;min-width:0;min-height:46px;background:transparent;border:none;outline:none;color:var(--fg);
+  font-size:16px;font-variant-numeric:tabular-nums;padding:0 12px;font-family:inherit;font-weight:600}
+.input select{appearance:none;cursor:pointer;font-weight:600;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%239aa7a1' stroke-width='2'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.input select option{background:#0d1420;color:var(--fg)}
+.hint{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.45}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.frow{grid-template-columns:1fr}}
+
+/* ---------- results ---------- */
+.results{display:grid;gap:12px}
+.result-top{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.stat .lbl{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.stat .val{font-size:29px;font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.15}
+.stat .note{font-size:12px;color:var(--faint);margin-top:3px}
+.stat.keep{border-color:rgba(52,211,153,.45);background:var(--emerald-soft)}
+.stat.keep .val{color:var(--emerald)}
+.stat.goldb{border-color:rgba(227,180,95,.4);background:var(--gold-soft)}
+.stat.goldb .val{color:var(--gold)}
+.tax3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:520px){.tax3{grid-template-columns:1fr}}
+.tax3 .val{font-size:21px}
+.bars{margin-top:4px}
+.bar-row{display:grid;grid-template-columns:118px 1fr 74px;gap:10px;align-items:center;font-size:12.5px;margin-top:9px}
+.bar-row .bl{color:var(--muted);font-weight:600}
+.bar-row .bv{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.track{height:9px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.fill{height:100%;border-radius:99px;width:0;transition:width .7s cubic-bezier(.22,1,.36,1)}
+.fill.se{background:linear-gradient(90deg,#0d9668,var(--emerald))}
+.fill.fed{background:linear-gradient(90deg,#7c5cd6,var(--violet))}
+.fill.st{background:linear-gradient(90deg,#b9822e,var(--gold))}
+.minirow{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);
+  border-top:1px solid var(--line);padding-top:13px;margin-top:2px}
+.minirow b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+/* ---------- quarterly ---------- */
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:860px){.qgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.qgrid{grid-template-columns:1fr}}
+.qcard{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.qcard.next{border-color:rgba(227,180,95,.55);background:var(--gold-soft)}
+.qcard .ql{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.qcard .qd{font-size:15px;font-weight:800;margin-top:4px}
+.qcard .qp{font-size:11.5px;color:var(--faint)}
+.qcard .qa{font-size:23px;font-weight:800;margin-top:9px;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;margin-top:9px}
+.badge.past{background:rgba(255,255,255,.08);color:var(--faint)}
+.badge.nextb{background:var(--gold);color:#231a04}
+.badge.up{background:var(--emerald-soft);color:var(--emerald)}
+
+/* ---------- what-if / projection ---------- */
+input[type=range]{width:100%;accent-color:var(--emerald);height:32px;cursor:pointer}
+.wi-out{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+@media(max-width:620px){.wi-out{grid-template-columns:1fr}}
+.delta-up{color:var(--danger)!important}.delta-dn{color:var(--emerald)!important}
+
+/* ---------- checklist ---------- */
+.ck-item{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.ck-item:hover{background:var(--surface2)}
+.ck-item input{width:19px;height:19px;accent-color:var(--emerald);margin-top:2px;flex-shrink:0;cursor:pointer}
+.ck-item .ct{font-size:14px;font-weight:600}
+.ck-item .cd{font-size:12px;color:var(--muted)}
+.ck-item.done .ct{color:var(--muted);text-decoration:line-through}
+.progress{height:10px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:4px 0 16px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#0d9668,var(--emerald));width:0;transition:width .5s}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 22px;border-radius:12px;border:none;
+  font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform .12s,opacity .15s;text-decoration:none}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--emerald);color:var(--ink)}
+.btn-primary:hover{background:#5eead4}
+.btn-ghost{background:var(--surface2);color:var(--fg);border:1px solid var(--line2)}
+
+/* ---------- packet (screen + print) ---------- */
+@media screen{#packetsec{display:none!important}}
+#packet{background:#fbfbf8;color:#14201b;border-radius:var(--radius-lg);padding:34px;box-shadow:var(--shadow)}
+#packet h2{color:#0c2e23;font-size:22px}
+#packet h3{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:#5a6b63;margin:22px 0 8px}
+#packet table{width:100%;border-collapse:collapse;font-size:13.5px}
+#packet td,#packet th{padding:7px 9px;border-bottom:1px solid #dde4df;text-align:left}
+#packet td:last-child,#packet th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+#packet .tot td{font-weight:800;border-top:2px solid #14201b;border-bottom:none}
+#packet .pk-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0c2e23;padding-bottom:14px}
+#packet .pk-note{font-size:11.5px;color:#5a6b63;margin-top:16px;line-height:1.5}
+
+/* ---------- misc ---------- */
+.disclaimer{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:14px 17px;margin-top:22px;line-height:1.6}
+.disclaimer strong{color:var(--fg)}
+details.how{margin-top:22px;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface)}
+details.how summary{padding:16px 22px;font-size:14.5px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.how summary::-webkit-details-marker{display:none}
+details.how .body{padding:0 22px 20px;font-size:13px;color:var(--muted);line-height:1.65}
+details.how li{margin:0 0 6px 18px}
+footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- print ---------- */
+@media print{
+  body{background:#fff!important}
+  .topbar,#qmenu,.hero,.no-print,footer,.disclaimer{display:none!important}
+  main{padding:0}
+  .wrap{max-width:100%;padding:0}
+  #packet{box-shadow:none;border-radius:0;padding:8px}
+  .print-only-sec{display:block!important}
+}
+</style>
+<meta name="google-site-verification" content="euVOx2u0GRtHUOgBG1Jltp1zSuDpt5xNJvpYNIyN7kU">
+</head>
+<body>
+<header class="topbar no-print">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="brandmark">H</span><span><b>HustleCalc</b><small>Side Hustle Tax Calculator</small></span></a>
+    <nav class="topnav">
+      <a href="#calculator">Calculator</a>
+      <a href="#quarterly">Quarterly</a>
+      <a href="#international">International</a>
+      <a class="toplink-cta" href="#" onclick="window.print();return false">Tax packet</a>
+    </nav>
+  </div>
+</header>
+
+<div id="qmenu" class="no-print">
+  <button id="qbtn" aria-label="Jump to a section" title="Sections">&#8942;</button>
+  <div id="qdrop" hidden>
+    <div class="qhead">Jump to</div>
+    <a href="#calculator"><span class="dot"></span>Tax calculator</a>
+    <a href="#quarterly"><span class="dot"></span>Quarterly payments</a>
+    <a href="#deductions"><span class="dot"></span>Deduction optimizer</a>
+    <a href="#whatif"><span class="dot"></span>What-if scenario</a>
+    <a href="#projection"><span class="dot"></span>Full-year projection</a>
+    <a href="#checklist" class="gold"><span class="dot"></span>CPA checklist</a>
+    <a href="#" onclick="window.print();return false" class="gold"><span class="dot"></span>Year-end tax packet</a>
+    <a href="#international"><span class="dot"></span>International estimator</a>
+  </div>
+</div>
+
+<div class="wrap" id="top">
+  <section class="hero no-print">
+    <span class="eyebrow"><i></i>Tax year 2026 · Figures verified vs. IRS</span>
+    <h1>Know what you <span class="grad">really keep</span> from your side hustle</h1>
+    <p>A clearer picture of your side-hustle money. Estimate federal, self-employment and state tax, set aside the right amount every month, and walk into tax season with a packet your CPA will love — without handing over your financial data.</p>
+    <div class="trustrow">
+      <span><b>100%</b> private — runs in your browser</span>
+      <span><b>2026</b> IRS brackets &amp; rates</span>
+      <span><b>Free</b> — no sign-up</span>
+    </div>
+  </section>
+
+  <main>
+    <!-- ============ CALCULATOR ============ -->
+    <div class="grid2" id="calculator">
+      <section class="card">
+        <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2m4 0h2M8 15h2m4 0h2M8 19h8"/></svg></span>Your 2026 numbers</h2>
+        <p class="sub">Start with a hustle type, then adjust. Everything updates live.</p>
+
+        <div class="presets" id="presets">
+          <button class="preset" data-p="delivery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M5.5 17.5 9 10h6l3.5 7.5M12 6h3l2 4"/></svg>Delivery driver</button>
+          <button class="preset" data-p="rideshare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 11 6.5 5h11L19 11m-14 0h14a2 2 0 0 1 2 2v5h-2.5m-13.5 0H3v-5a2 2 0 0 1 2-2Zm1.5 7a1.8 1.8 0 1 0 0-.01M17.5 18a1.8 1.8 0 1 0 0-.01"/></svg>Rideshare</button>
+          <button class="preset" data-p="freelance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>Freelancer</button>
+          <button class="preset" data-p="etsy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16l-1.5 12h-13L4 7Zm4 0a4 4 0 0 1 8 0"/></svg>Etsy / shop seller</button>
+          <button class="preset" data-p="creator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/></svg>Creator</button>
+          <button class="preset" data-p="handyman"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.5 6.5a4 4 0 0 1 5.6-3.9L17 5.7l2.3 2.3 3.1-3.1a4 4 0 0 1-5.5 5.3L8 19.1a2 2 0 0 1-2.8 0l-2-2a2 2 0 0 1 0-2.8l8.9-8.9Z" transform="scale(.92) translate(1 1)"/></svg>Handyman</button>
+        </div>
+
+        <div class="field">
+          <label for="inc">Annual side-hustle income <span class="opt">(before tips)</span></label>
+          <div class="input"><span class="pre">$</span><input id="inc" type="number" min="0" inputmode="decimal" value="42000"></div>
+        </div>
+        <div class="frow">
+          <div class="field">
+            <label for="tips">Tips received <span class="opt">(included in income tax)</span></label>
+            <div class="input"><span class="pre">$</span><input id="tips" type="number" min="0" inputmode="decimal" value="6000"></div>
+            <div class="hint">Qualified tips may be deductible up to $25,000 under the 2025 OBBBA “No Tax on Tips” rule (2025–2028).</div>
+          </div>
+          <div class="field">
+            <label for="exp">Direct business expenses</label>
+            <div class="input"><span class="pre">$</span><input id="exp" type="number" min="0" inputmode="decimal" value="6500"></div>
+            <div class="hint">Fees, fuel, materials, software — not the optimizer items below.</div>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="field">
+            <label for="w2">Other W-2 wages <span class="opt">(optional)</span></label>
+            <div class="input"><span class="pre">$</span><input id="w2" type="number" min="0" inputmode="decimal" value="0"></div>
+            <div class="hint">A day job stacks under your hustle in the tax brackets.</div>
+          </div>
+          <div class="field">
+            <label for="status">Filing status</label>
+            <div class="input"><select id="status">
+              <option value="single" selected>Single</option>
+              <option value="mfj">Married filing jointly</option>
+            </select></div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:2px">
+          <label for="state">State</label>
+          <div class="input"><select id="state"></select></div>
+          <div class="hint">State tax is a simplified flat-rate estimate (see methodology) — your state may use brackets, credits and local taxes.</div>
+        </div>
+      </section>
+
+      <section class="card" aria-live="polite">
+        <h2><span class="ico gold"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 6.5c-.8-1-2.6-1.5-5-1.5-3 0-5 1.3-5 3.2 0 4.4 10 2.3 10 6.6 0 1.9-2 3.2-5 3.2-2.4 0-4.2-.6-5-1.6"/></svg></span>Your estimate</h2>
+        <p class="sub">Federal tax is calculated on your hustle income only, stacked on top of any W-2 wages.</p>
+        <div class="results">
+          <div class="result-top">
+            <div class="stat keep"><div class="lbl">You keep (after tax)</div><div class="val" id="rKeep">$0</div><div class="note">Income + tips − expenses − tax</div></div>
+            <div class="stat goldb"><div class="lbl">Set aside monthly</div><div class="val" id="rMonthly">$0</div><div class="note">So April never surprises you</div></div>
+          </div>
+          <div class="stat"><div class="lbl">Net business profit</div><div class="val" id="rProfit">$0</div><div class="note">After expenses &amp; optimizer deductions</div></div>
+          <div class="tax3">
+            <div class="stat"><div class="lbl">Self-employment tax</div><div class="val" id="rSE">$0</div><div class="note">15.3% on 92.35% of profit</div></div>
+            <div class="stat"><div class="lbl">Federal income tax</div><div class="val" id="rFed">$0</div><div class="note">After std. deduction, tips &amp; QBI</div></div>
+            <div class="stat"><div class="lbl">State estimate</div><div class="val" id="rState">$0</div><div class="note" id="rStateNote">Flat-rate estimate</div></div>
+          </div>
+          <div class="bars">
+            <div class="bar-row"><span class="bl">Self-employment</span><div class="track"><div class="fill se" id="barSE"></div></div><span class="bv" id="bvSE">$0</span></div>
+            <div class="bar-row"><span class="bl">Federal</span><div class="track"><div class="fill fed" id="barFed"></div></div><span class="bv" id="bvFed">$0</span></div>
+            <div class="bar-row"><span class="bl">State</span><div class="track"><div class="fill st" id="barState"></div></div><span class="bv" id="bvState">$0</span></div>
+          </div>
+          <div class="minirow">
+            <span>Total tax <b id="rTotal">$0</b></span>
+            <span>Effective rate <b id="rEff">0%</b></span>
+            <span>Per quarter <b id="rQuarter">$0</b></span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ QUARTERLY ============ -->
+    <section class="card section no-print" id="quarterly">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>Quarterly estimated payments</h2>
+      <p class="sub">Pay your estimated tax in four installments with Form 1040-ES. Missing these dates is what triggers underpayment penalties — the amounts below update with your estimate.</p>
+      <div class="qgrid" id="qgrid"></div>
+      <p class="hint" style="margin-top:14px">Tip: you can skip the January payment if you file your 2026 return and pay in full by February 1, 2027. Safe harbor: paying 100% of last year's tax (110% if your AGI was over $150,000) generally avoids the penalty.</p>
+    </section>
+
+    <!-- ============ DEDUCTIONS ============ -->
+    <section class="card section" id="deductions">
+      <h2><span class="ico gold"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>Deduction optimizer</h2>
+      <p class="sub">The deductions gig workers miss most. These flow straight into your estimate above — watch your tax drop.</p>
+      <div class="frow">
+        <div class="field">
+          <label for="mi1">Business miles · Jan–Jun 2026</label>
+          <div class="input"><input id="mi1" type="number" min="0" inputmode="numeric" value="9000"><span class="suf">mi × 72.5¢</span></div>
+          <div class="hint">IRS Notice 2026-10 rate for the first half of 2026.</div>
+        </div>
+        <div class="field">
+          <label for="mi2">Business miles · Jul–Dec 2026</label>
+          <div class="input"><input id="mi2" type="number" min="0" inputmode="numeric" value="9500"><span class="suf">mi × 76¢</span></div>
+          <div class="hint">The IRS raised the rate mid-year (Announcement 2026-11).</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label for="ho">Home office size <span class="opt">(simplified method)</span></label>
+          <div class="input"><input id="ho" type="number" min="0" max="300" inputmode="numeric" value="0"><span class="suf">sq ft × $5</span></div>
+          <div class="hint">$5 per sq ft, up to 300 sq ft ($1,500 max). Space must be used regularly and exclusively for business.</div>
+        </div>
+        <div class="field">
+          <label for="supplies">Supplies &amp; gear</label>
+          <div class="input"><span class="pre">$</span><input id="supplies" type="number" min="0" inputmode="decimal" value="400"></div>
+          <div class="hint">Bags, mounts, tools, packaging, materials.</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label for="phoneBill">Annual phone bill</label>
+          <div class="input"><span class="pre">$</span><input id="phoneBill" type="number" min="0" inputmode="decimal" value="720"></div>
+        </div>
+        <div class="field">
+          <label for="phonePct">% used for business</label>
+          <div class="input"><input id="phonePct" type="number" min="0" max="100" inputmode="numeric" value="60"><span class="suf">%</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="health">Health insurance premiums paid <span class="opt">(self-employed)</span></label>
+        <div class="input"><span class="pre">$</span><input id="health" type="number" min="0" inputmode="decimal" value="0"></div>
+        <div class="hint">Deductible against income tax (not SE tax) when you aren't eligible for an employer plan — and capped at your net business profit.</div>
+      </div>
+      <div class="result-top" style="margin-top:6px">
+        <div class="stat"><div class="lbl">Total optimizer deductions</div><div class="val" id="optTotal">$0</div><div class="note">Mileage + home office + phone + supplies + premiums</div></div>
+        <div class="stat keep"><div class="lbl">Estimated tax saved</div><div class="val" id="optSaved">$0</div><div class="note">Your tax with vs. without these deductions</div></div>
+      </div>
+    </section>
+
+    <!-- ============ WHAT-IF + PROJECTION ============ -->
+    <div class="grid2">
+      <section class="card section" id="whatif" style="margin-top:22px">
+        <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 19V5m0 14h16M8 15v-3m4 3V8m4 7v-5"/></svg></span>What-if scenario</h2>
+        <p class="sub">What happens if business grows — or slows down? Slide to scale your hustle income.</p>
+        <label for="wiRange" style="font-size:13px;font-weight:600">Income change: <span id="wiLabel" style="color:var(--emerald)">+0%</span></label>
+        <input type="range" id="wiRange" min="-50" max="100" step="5" value="0">
+        <div class="wi-out" style="grid-template-columns:1fr">
+          <div class="stat"><div class="lbl">New total tax</div><div class="val" id="wiTax">$0</div><div class="note" id="wiDelta">—</div></div>
+          <div class="stat goldb"><div class="lbl">New monthly set-aside</div><div class="val" id="wiMonthly">$0</div><div class="note" id="wiKeep">Take-home —</div></div>
+        </div>
+      </section>
+
+      <section class="card section" id="projection" style="margin-top:22px">
+        <h2><span class="ico gold"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8m0 0h-5m5 0v5"/></svg></span>Full-year projection</h2>
+        <p class="sub">Just getting started? Project a full year from a typical month.</p>
+        <div class="frow">
+          <div class="field"><label for="pjInc">Monthly income</label><div class="input"><span class="pre">$</span><input id="pjInc" type="number" min="0" value="3500"></div></div>
+          <div class="field"><label for="pjExp">Monthly expenses</label><div class="input"><span class="pre">$</span><input id="pjExp" type="number" min="0" value="540"></div></div>
+        </div>
+        <div class="wi-out" style="grid-template-columns:1fr">
+          <div class="stat"><div class="lbl">Projected annual tax</div><div class="val" id="pjTax">$0</div><div class="note" id="pjProfit">On $0 of projected profit</div></div>
+          <div class="stat keep"><div class="lbl">Recommended monthly set-aside</div><div class="val" id="pjMonthly">$0</div><div class="note">Move this to a separate savings account every month</div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ CHECKLIST ============ -->
+    <section class="card section" id="checklist">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 5l1 1 2-2M4 11l1 1 2-2M4 17l1 1 2-2"/></svg></span>CPA / preparer checklist</h2>
+      <p class="sub">Gather these before you meet your preparer — or file yourself. <span id="ckCount">0 of 8 ready</span></p>
+      <div class="progress"><i id="ckBar"></i></div>
+      <div id="ckList"></div>
+    </section>
+
+    <!-- ============ TAX PACKET ============ -->
+    <section class="section" id="packetsec">
+<div id="packet">
+        <div class="pk-head">
+          <div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#0a7a55">HustleCalc · Year-End Tax Packet</div>
+            <h2 style="margin-top:5px">2026 Side Hustle Tax Summary</h2>
+            <div style="font-size:12.5px;color:#5a6b63">Prepared <span id="pkDate"></span> · Filing status: <span id="pkStatus">Single</span> · State: <span id="pkState">—</span></div>
+          </div>
+          <button class="btn btn-primary no-print" id="printBtn" type="button">Print / save PDF</button>
+        </div>
+        <h3>Income summary</h3>
+        <table>
+          <tr><td>Gross side-hustle income</td><td id="pkInc">$0</td></tr>
+          <tr><td>Tips received</td><td id="pkTips">$0</td></tr>
+          <tr><td>Direct business expenses</td><td id="pkExp">$0</td></tr>
+          <tr><td>Optimizer deductions (mileage, home office, phone, supplies)</td><td id="pkOpt">$0</td></tr>
+          <tr class="tot"><td>Net business profit</td><td id="pkProfit">$0</td></tr>
+        </table>
+        <h3>Estimated tax liability</h3>
+        <table>
+          <tr><td>Self-employment tax (Social Security + Medicare)</td><td id="pkSE">$0</td></tr>
+          <tr><td>Federal income tax (after standard, tips &amp; QBI deductions)</td><td id="pkFed">$0</td></tr>
+          <tr><td>State income tax (flat-rate estimate)</td><td id="pkStateTax">$0</td></tr>
+          <tr class="tot"><td>Total estimated tax</td><td id="pkTotal">$0</td></tr>
+          <tr><td>Effective tax rate</td><td id="pkEff">0%</td></tr>
+          <tr><td>Take-home after tax</td><td id="pkKeep">$0</td></tr>
+        </table>
+        <h3>Quarterly estimated payments (Form 1040-ES)</h3>
+        <table id="pkQ"></table>
+        <h3>Monthly set-aside</h3>
+        <table><tr><td>Recommended monthly set-aside</td><td id="pkMonthly">$0</td></tr></table>
+        <p class="pk-note">This packet is an estimate generated by HustleCalc for planning and preparer discussions. It is not a tax return and is not tax, legal or accounting advice. Figures use published 2026 IRS rates (Rev. Proc. 2025-32; Notices 2026-10 / Announcement 2026-11 mileage). State tax is a simplified flat-rate approximation. Confirm your final numbers with a qualified tax professional.</p>
+      </div>
+    </section>
+
+    <!-- ============ INTERNATIONAL ============ -->
+    <section class="card section" id="international">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z"/></svg></span>International Tax Estimator</h2>
+      <p class="sub">Working a hustle outside the US? The same bracket math, with rates verified against each country's official source.</p>
+      <div class="frow">
+        <div class="field"><label for="cty">Country</label>
+          <div class="input"><select id="cty">
+            <option value="uk" selected>United Kingdom (2026/27)</option>
+            <option value="fr">France (2026, on 2025 income)</option>
+            <option value="ca">Canada — federal only (2026)</option>
+            <option value="au">Australia (2026/27)</option>
+          </select></div>
+        </div>
+        <div class="field"><label for="intlInc">Annual taxable income</label>
+          <div class="input"><span class="pre" id="intlSym">£</span><input id="intlInc" type="number" min="0" value="45000"></div>
+        </div>
+      </div>
+      <div class="tax3">
+        <div class="stat"><div class="lbl">Estimated tax</div><div class="val" id="intlTax">£0</div><div class="note" id="intlTaxNote">Income tax only</div></div>
+        <div class="stat"><div class="lbl">Effective rate</div><div class="val" id="intlEff">0%</div><div class="note">Tax ÷ income</div></div>
+        <div class="stat keep"><div class="lbl">Take-home</div><div class="val" id="intlKeep">£0</div><div class="note">Income − estimated tax</div></div>
+      </div>
+      <p class="hint" id="intlNote" style="margin-top:13px"></p>
+    </section>
+
+    <div class="disclaimer no-print"><strong>Estimates, not tax advice.</strong> HustleCalc provides planning estimates based on published 2026 figures. Your actual tax depends on your full situation — credits, other income, local taxes and rules we don't model. Nothing here is tax, legal or accounting advice. Confirm important decisions with a qualified tax professional.</div>
+
+    <details class="how no-print">
+      <summary>How this estimate is built <span aria-hidden="true">+</span></summary>
+      <div class="body">
+        <ul>
+          <li><strong>Federal brackets &amp; standard deduction (2026):</strong> IRS Revenue Procedure 2025-32 — single: 10% to $12,400, 12% to $50,400, 22% to $105,700, 24% to $201,775, 32% to $256,225, 35% to $640,600, 37% above; standard deduction $16,100 single / $32,200 married filing jointly.</li>
+          <li><strong>Self-employment tax:</strong> 15.3% (12.4% Social Security + 2.9% Medicare) on 92.35% of net profit. Social Security portion stops at the 2026 wage base of $184,500 (SSA), reduced by any W-2 wages. Half of SE tax is deducted before income tax. The extra 0.9% Additional Medicare Tax over $200,000 ($250,000 joint) is not modeled.</li>
+          <li><strong>Federal tax is marginal:</strong> we tax your total income, then subtract the tax on your W-2 wages alone, so the result is the tax caused by the hustle itself.</li>
+          <li><strong>Tips deduction:</strong> qualified tips are deductible up to $25,000 (OBBBA, tax years 2025–2028), capped at net business profit for the self-employed, phasing out by $100 per $1,000 of income over $150,000 ($300,000 joint). Tips still owe SE tax.</li>
+          <li><strong>QBI deduction:</strong> 20% of qualified business income (profit minus half of SE tax and health premiums), capped at 20% of taxable income before the deduction. Above the §199A threshold ($201,750 single / $403,500 joint, Rev. Proc. 2025-32), additional wage/SSTB limits can apply and are not modeled.</li>
+          <li><strong>Mileage:</strong> IRS standard mileage — 72.5¢/mile Jan–Jun 2026 (Notice 2026-10, IR-2025-128) and 76¢/mile Jul–Dec 2026 (Announcement 2026-11, IR-2026-29). Keep a mileage log; the IRS requires one.</li>
+          <li><strong>Home office (simplified):</strong> $5 per sq ft up to 300 sq ft (IRS simplified option). <strong>Health premiums:</strong> self-employed health insurance deduction — reduces income tax, not SE tax, capped at net profit.</li>
+          <li><strong>State tax:</strong> a simplified flat rate applied to net profit, chosen as a representative mid-range rate for your state. Real state taxes use their own brackets, deductions and sometimes city taxes — treat this as a planning approximation only.</li>
+          <li><strong>Quarterly dates (2026 Form 1040-ES):</strong> April 15, June 15, September 15, 2026 and January 15, 2027.</li>
+          <li><strong>International:</strong> UK — gov.uk (Personal Allowance £12,570 with the £100,000 taper; 20/40/45% bands; excludes National Insurance and Scottish rates). France — service-public.fr barème 2026 per part fiscale (single part assumed; excludes décote and social contributions). Canada — canada.ca federal brackets 2026 with the Basic Personal Amount credit ($16,452, phasing to $14,829); excludes provincial tax, CPP and EI. Australia — ato.gov.au resident rates 2026–27 plus the 2% Medicare levy; excludes the Low Income Tax Offset and HECS/HELP.</li>
+        </ul>
+      </div>
+    </details>
+  </main>
+
+  
+<section class="card section" id="prosec">
+<h2>HustleCalc Pro — $9 one-time</h2>
+<p class="sub">Unlock saved scenarios, the full CPA-ready tax packet, quarterly reminders, mileage &amp; expense trackers, and the complete Deduction Finder. One payment — no subscription, yours forever.</p>
+<p style="margin-top:14px"><a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener" style="display:inline-block;background:#34d399;color:#06281c;font-weight:700;padding:13px 34px;border-radius:999px;text-decoration:none">Get Pro — $9</a></p>
+<p class="sub">Secure checkout via Payhip · PayPal &amp; cards accepted</p>
+</section>
+<footer>
+    HustleCalc · Side Hustle Tax Calculator 2026 · Estimates for planning only — not tax advice.<br>
+    Not affiliated with the IRS, HMRC, CRA or the ATO. Figures verified against official sources, October 2026.
+  </footer>
+</div>
+
+<script>
+
+"use strict";
+/* ================= VERIFIED DATA (Oct 2026) =================
+   US: IRS Rev. Proc. 2025-32 (brackets, std deduction, §199A thresholds);
+   SSA 2026 wage base $184,500; mileage Notice 2026-10 (IR-2025-128) 72.5¢
+   Jan–Jun + Announcement 2026-11 (IR-2026-29) 76¢ Jul–Dec;
+   tips deduction: OBBBA §224 (IRS IR-2025-114 summary).
+   UK: gov.uk 2026/27. FR: service-public.fr barème 2026.
+   CA: canada.ca 2026. AU: ato.gov.au 2026–27. */
+const BR = {
+  single:[[12400,.10],[50400,.12],[105700,.22],[201775,.24],[256225,.32],[640600,.35],[Infinity,.37]],
+  mfj:[[24800,.10],[100800,.12],[211400,.22],[403550,.24],[512450,.32],[768700,.35],[Infinity,.37]]
+};
+const STD = {single:16100, mfj:32200};
+const SS_BASE = 184500;
+const STATES = [["Alabama",5.00],["Alaska",0],["Arizona",2.50],["Arkansas",3.90],["California",9.30],["Colorado",4.40],["Connecticut",5.50],["Delaware",6.60],["District of Columbia",8.50],["Florida",0],["Georgia",5.39],["Hawaii",8.25],["Idaho",5.69],["Illinois",4.95],["Indiana",3.05],["Iowa",3.80],["Kansas",5.70],["Kentucky",4.00],["Louisiana",3.00],["Maine",7.15],["Maryland",5.75],["Massachusetts",5.00],["Michigan",4.25],["Minnesota",7.85],["Mississippi",4.40],["Missouri",4.70],["Montana",5.90],["Nebraska",5.20],["Nevada",0],["New Hampshire",0],["New Jersey",6.37],["New Mexico",4.90],["New York",6.00],["North Carolina",3.99],["North Dakota",2.50],["Ohio",3.50],["Oklahoma",4.75],["Oregon",8.75],["Pennsylvania",3.07],["Rhode Island",5.99],["South Carolina",6.20],["South Dakota",0],["Tennessee",0],["Texas",0],["Utah",4.55],["Vermont",7.60],["Virginia",5.75],["Washington",0],["West Virginia",4.82],["Wisconsin",5.30],["Wyoming",0]];
+const QDATES = [
+  {q:"Q1 · 2026", d:"April 15, 2026", period:"Income Jan 1 – Mar 31", iso:"2026-04-15"},
+  {q:"Q2 · 2026", d:"June 15, 2026", period:"Income Apr 1 – May 31", iso:"2026-06-15"},
+  {q:"Q3 · 2026", d:"September 15, 2026", period:"Income Jun 1 – Aug 31", iso:"2026-09-15"},
+  {q:"Q4 · 2026", d:"January 15, 2027", period:"Income Sep 1 – Dec 31", iso:"2027-01-15"}
+];
+const PRESETS = {
+  delivery:{inc:42000,tips:6000,exp:6500,mi1:9000,mi2:9500,ho:0,phoneBill:720,phonePct:60,health:0,supplies:400},
+  rideshare:{inc:38000,tips:3500,exp:5200,mi1:11000,mi2:11500,ho:0,phoneBill:840,phonePct:70,health:0,supplies:600},
+  freelance:{inc:68000,tips:0,exp:4200,mi1:800,mi2:700,ho:200,phoneBill:960,phonePct:40,health:4800,supplies:1800},
+  etsy:{inc:26000,tips:0,exp:9800,mi1:1200,mi2:1300,ho:120,phoneBill:600,phonePct:30,health:0,supplies:2500},
+  creator:{inc:54000,tips:1200,exp:7600,mi1:2000,mi2:2100,ho:150,phoneBill:900,phonePct:50,health:3600,supplies:3200},
+  handyman:{inc:58000,tips:800,exp:8900,mi1:6000,mi2:6200,ho:80,phoneBill:780,phonePct:65,health:2400,supplies:2900}
+};
+const CHECKS = [
+  ["Forms 1099-NEC & 1099-K","From every platform and client that paid you — check amounts against your own records"],
+  ["Mileage log","Dates, miles and business purpose for each trip (the IRS requires a log)"],
+  ["Expense receipts","Platform fees, fuel, supplies, software and gear"],
+  ["Home office details","Square footage of your dedicated workspace, plus photos"],
+  ["Health insurance statements","Premium totals for the self-employed health insurance deduction"],
+  ["Quarterly payment confirmations","1040-ES receipts or your IRS online account transcript"],
+  ["Business bank & card statements","Twelve months — personal spending separated or highlighted"],
+  ["Last year's tax return","Needed for carryovers, QBI history and safe-harbor estimates"]
+];
+
+/* ================= ENGINE ================= */
+function bracketTax(taxable, br){
+  let tax = 0, prev = 0;
+  for (let i = 0; i < br.length; i++){
+    if (taxable <= prev) break;
+    tax += (Math.min(taxable, br[i][0]) - prev) * br[i][1];
+    prev = br[i][0];
+  }
+  return tax;
+}
+function seTaxCalc(profit, w2){
+  if (profit <= 0) return 0;
+  const ne = profit * 0.9235;                       // 92.35% of net earnings
+  const room = Math.max(0, SS_BASE - Math.max(0, w2)); // SS cap left after W-2 wages
+  return Math.min(ne, room) * 0.124 + ne * 0.029;    // 12.4% SS + 2.9% Medicare
+}
+function compute(o){
+  const profit = Math.max(0, o.inc + o.tips - o.exp - o.schC);
+  const se = seTaxCalc(profit, o.w2);
+  const halfSE = se / 2;
+  const health = Math.min(Math.max(0, o.health), profit);  // SE health insurance: capped at profit
+  const agi = o.w2 + profit - halfSE - health;
+  // OBBBA tips deduction: up to $25k, capped at profit, $100 lost per $1,000 MAGI over threshold
+  let tipsDed = Math.min(o.tips, 25000, profit);
+  const magi = agi + tipsDed;
+  const thr = o.status === "mfj" ? 300000 : 150000;
+  if (magi > thr) tipsDed = Math.max(0, tipsDed - Math.ceil((magi - thr) / 1000) * 100);
+  // QBI (§199A): 20% of (profit − ½ SE tax − health premiums), capped at 20% of taxable income before QBI
+  const std = STD[o.status];
+  const taxableBeforeQBI = Math.max(0, agi - std - tipsDed);
+  const qbiDed = Math.min(0.20 * Math.max(0, profit - halfSE - health), 0.20 * taxableBeforeQBI);
+  const taxable = Math.max(0, taxableBeforeQBI - qbiDed);
+  const fedTotal = bracketTax(taxable, BR[o.status]);
+  const fedW2 = bracketTax(Math.max(0, o.w2 - std), BR[o.status]);
+  const fed = Math.max(0, fedTotal - fedW2);              // tax caused by the hustle only
+  const stateTax = profit * o.stateRate;
+  const total = se + fed + stateTax;
+  const keep = (o.inc + o.tips - o.exp) - total;
+  const eff = (o.inc + o.tips) > 0 ? total / (o.inc + o.tips) : 0;
+  return {profit, se, fed, stateTax, total, keep, eff, monthly: total / 12, quarter: total / 4,
+          tipsDed, qbiDed, healthApplied: health, taxable};
+}
+
+/* ================= INTERNATIONAL ================= */
+const INTL = {
+  uk:{sym:"£", taxNote:"Income tax only (no National Insurance)",
+    note:"United Kingdom — England, Wales & Northern Ireland, tax year 2026/27 (source: gov.uk). Personal Allowance £12,570, reduced by £1 for every £2 of income over £100,000. Income tax only: National Insurance contributions and Scottish rates are not included.",
+    calc:function(inc){ const pa = 12570 - Math.min(12570, Math.max(0, (inc - 100000) / 2));
+      return bracketTax(Math.max(0, inc - pa), [[37700,.20],[125140,.40],[Infinity,.45]]); }},
+  fr:{sym:"€", taxNote:"Income tax only (before décote)",
+    note:"France — 2026 barème applied to 2025 income, per part fiscale (source: service-public.fr). Calculated for a single part: the quotient familial for families, the décote low-income reduction and social contributions (CSG/CRDS) are not included.",
+    calc:function(inc){ return bracketTax(inc, [[11600,0],[29579,.11],[84577,.30],[181917,.41],[Infinity,.45]]); }},
+  ca:{sym:"$", taxNote:"Federal tax only (after BPA credit)",
+    note:"Canada — federal tax only, 2026 (source: canada.ca). Includes the Basic Personal Amount credit of $16,452 at the 14% rate, phasing down to $14,829 for incomes between $181,440 and $258,482. Provincial/territorial tax, CPP and EI are not included.",
+    calc:function(inc){ let bpa = 16452; if (inc > 181440) bpa = inc >= 258482 ? 14829 : 16452 - 1623 * (inc - 181440) / (258482 - 181440);
+      return Math.max(0, bracketTax(inc, [[58523,.14],[117045,.205],[181440,.26],[258482,.29],[Infinity,.33]]) - bpa * 0.14); }},
+  au:{sym:"$", taxNote:"Income tax + 2% Medicare levy",
+    note:"Australia — resident rates 2026/27 (source: ato.gov.au), plus the 2% Medicare levy. The Low Income Tax Offset (up to $700) and HECS/HELP repayments are not included.",
+    calc:function(inc){ return bracketTax(inc, [[18200,0],[45000,.15],[135000,.30],[190000,.37],[Infinity,.45]]) + inc * 0.02; }}
+};
+</script>
+
+<script>
+"use strict";
+const $ = function(id){ return document.getElementById(id); };
+const num = function(id){ const v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; };
+const fmt$ = function(n){ return "$" + Math.round(n).toLocaleString("en-US"); };
+const fmtC = function(n, s){ return s + Math.round(n).toLocaleString("en-US"); };
+
+/* animated count-up for money values */
+function anim(el, to, sym){
+  const from = el._v || 0; el._v = to;
+  if (el._raf) cancelAnimationFrame(el._raf);
+  const t0 = performance.now(), dur = 450;
+  const step = function(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmtC(from + (to - from) * e, sym || "$");
+    if (p < 1) el._raf = requestAnimationFrame(step);
+  };
+  el._raf = requestAnimationFrame(step);
+}
+
+/* state dropdown */
+(function(){
+  const sel = $("state");
+  STATES.forEach(function(s, i){
+    const o = document.createElement("option");
+    o.value = s[1] / 100; o.textContent = s[0] + (s[1] === 0 ? " — no income tax" : " — est. " + s[1].toFixed(2) + "%");
+    if (s[0] === "California") o.selected = true;
+    sel.appendChild(o);
+  });
+})();
+
+/* quarterly cards */
+(function(){
+  const now = new Date(); let nextFound = false;
+  QDATES.forEach(function(q, i){
+    const past = new Date(q.iso + "T23:59:59") < now;
+    let cls = "", badge = "";
+    if (past){ badge = '<span class="badge past">Due date passed</span>'; }
+    else if (!nextFound){ cls = " next"; badge = '<span class="badge nextb">Up next</span>'; nextFound = true; }
+    else { badge = '<span class="badge up">Upcoming</span>'; }
+    const d = document.createElement("div");
+    d.className = "qcard" + cls;
+    d.innerHTML = '<div class="ql">' + q.q + '</div><div class="qd">' + q.d + '</div><div class="qp">' + q.period + '</div><div class="qa" id="qAmt' + i + '">$0</div>' + badge;
+    $("qgrid").appendChild(d);
+  });
+})();
+
+/* checklist */
+let ckState = [];
+try { ckState = JSON.parse(localStorage.getItem("hc_checks") || "[]"); } catch(e) { ckState = []; }
+(function(){
+  CHECKS.forEach(function(c, i){
+    const lab = document.createElement("label");
+    lab.className = "ck-item" + (ckState[i] ? " done" : "");
+    lab.innerHTML = '<input type="checkbox" data-i="' + i + '"' + (ckState[i] ? " checked" : "") + '><span><span class="ct">' + c[0] + '</span><br><span class="cd">' + c[1] + "</span></span>";
+    $("ckList").appendChild(lab);
+  });
+})();
+function ckUpdate(){
+  const boxes = document.querySelectorAll("#ckList input");
+  let n = 0; boxes.forEach(function(b){ if (b.checked) n++; });
+  $("ckBar").style.width = (n / CHECKS.length * 100) + "%";
+  $("ckCount").textContent = n + " of " + CHECKS.length + " ready";
+}
+document.querySelectorAll("#ckList input").forEach(function(b){
+  b.addEventListener("change", function(){
+    ckState[+b.dataset.i] = b.checked;
+    b.closest(".ck-item").classList.toggle("done", b.checked);
+    try { localStorage.setItem("hc_checks", JSON.stringify(ckState)); } catch(e) {}
+    ckUpdate();
+  });
+});
+
+/* current inputs -> compute() params */
+function curInputs(){
+  const mileage = num("mi1") * 0.725 + num("mi2") * 0.76;
+  const homeOffice = Math.min(num("ho"), 300) * 5;
+  const phone = num("phoneBill") * Math.min(num("phonePct"), 100) / 100;
+  const supplies = num("supplies");
+  return {
+    inc: num("inc"), tips: num("tips"), exp: num("exp"), w2: num("w2"),
+    status: $("status").value, stateRate: parseFloat($("state").value) || 0,
+    schC: mileage + homeOffice + phone + supplies, health: num("health"),
+    optParts: {mileage, homeOffice, phone, supplies}
+  };
+}
+
+let LAST = null;
+function render(){
+  const o = curInputs();
+  const r = compute(o); LAST = r;
+  const rNo = compute(Object.assign({}, o, {schC: 0, health: 0}));
+  anim($("rKeep"), r.keep); anim($("rMonthly"), r.monthly); anim($("rProfit"), r.profit);
+  anim($("rSE"), r.se); anim($("rFed"), r.fed); anim($("rState"), r.stateTax);
+  $("bvSE").textContent = fmt$(r.se); $("bvFed").textContent = fmt$(r.fed); $("bvState").textContent = fmt$(r.stateTax);
+  const gross = Math.max(1, o.inc + o.tips);
+  $("barSE").style.width = Math.min(100, r.se / gross * 100) + "%";
+  $("barFed").style.width = Math.min(100, r.fed / gross * 100) + "%";
+  $("barState").style.width = Math.min(100, r.stateTax / gross * 100) + "%";
+  $("rTotal").textContent = fmt$(r.total);
+  $("rEff").textContent = (r.eff * 100).toFixed(1) + "%";
+  $("rQuarter").textContent = fmt$(r.quarter);
+  const stName = $("state").options[$("state").selectedIndex].textContent.split(" — ")[0];
+  $("rStateNote").textContent = o.stateRate === 0 ? stName + ": no state income tax" : stName + " flat-rate estimate";
+  /* optimizer outputs */
+  const optTotal = o.schC + r.healthApplied;
+  anim($("optTotal"), optTotal);
+  anim($("optSaved"), Math.max(0, rNo.total - r.total));
+  /* quarterly amounts */
+  QDATES.forEach(function(q, i){ const el = $("qAmt" + i); if (el) el.textContent = fmt$(r.quarter); });
+  /* packet */
+  $("pkDate").textContent = new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"});
+  $("pkStatus").textContent = o.status === "mfj" ? "Married filing jointly" : "Single";
+  $("pkState").textContent = stName;
+  $("pkInc").textContent = fmt$(o.inc); $("pkTips").textContent = fmt$(o.tips);
+  $("pkExp").textContent = "−" + fmt$(o.exp); $("pkOpt").textContent = "−" + fmt$(o.schC);
+  $("pkProfit").textContent = fmt$(r.profit);
+  $("pkSE").textContent = fmt$(r.se); $("pkFed").textContent = fmt$(r.fed);
+  $("pkStateTax").textContent = fmt$(r.stateTax); $("pkTotal").textContent = fmt$(r.total);
+  $("pkEff").textContent = (r.eff * 100).toFixed(1) + "%";
+  $("pkKeep").textContent = fmt$(r.keep); $("pkMonthly").textContent = fmt$(r.monthly);
+  $("pkQ").innerHTML = QDATES.map(function(q){ return "<tr><td>" + q.q + " — due " + q.d + "</td><td>" + fmt$(r.quarter) + "</td></tr>"; }).join("");
+  renderWhatIf(); renderProjection();
+}
+
+function renderWhatIf(){
+  const o = curInputs();
+  const p = parseFloat($("wiRange").value) || 0;
+  $("wiLabel").textContent = (p >= 0 ? "+" : "") + p + "%";
+  const r = compute(Object.assign({}, o, {inc: o.inc * (1 + p / 100)}));
+  anim($("wiTax"), r.total); anim($("wiMonthly"), r.monthly);
+  const d = LAST ? r.total - LAST.total : 0;
+  const wd = $("wiDelta");
+  wd.textContent = (d >= 0 ? "Tax rises by " : "Tax falls by ") + fmt$(Math.abs(d)) + " vs. today";
+  wd.className = "note " + (d > 0 ? "delta-up" : d < 0 ? "delta-dn" : "");
+  $("wiKeep").textContent = "Take-home " + fmt$(r.keep);
+}
+
+function renderProjection(){
+  const o = curInputs();
+  const pInc = num("pjInc") * 12, pExp = num("pjExp") * 12;
+  const ratio = o.inc > 0 ? pInc / o.inc : 0;
+  const r = compute({inc: pInc, tips: o.tips * ratio, exp: pExp, w2: o.w2, status: o.status,
+                     stateRate: o.stateRate, schC: 0, health: 0});
+  anim($("pjTax"), r.total); anim($("pjMonthly"), r.monthly);
+  $("pjProfit").textContent = "On " + fmt$(Math.max(0, pInc + o.tips * ratio - pExp)) + " of projected profit (before optimizer deductions)";
+}
+
+/* international */
+function renderIntl(){
+  const c = INTL[$("cty").value];
+  const inc = num("intlInc");
+  const tax = inc > 0 ? c.calc(inc) : 0;
+  $("intlSym").textContent = c.sym;
+  anim($("intlTax"), tax, c.sym); anim($("intlKeep"), Math.max(0, inc - tax), c.sym);
+  $("intlEff").textContent = inc > 0 ? (tax / inc * 100).toFixed(1) + "%" : "0%";
+  $("intlTaxNote").textContent = c.taxNote;
+  $("intlNote").textContent = c.note;
+}
+
+/* events */
+["inc","tips","exp","w2","status","state","mi1","mi2","ho","phoneBill","phonePct","health","supplies","pjInc","pjExp","intlInc","cty"].forEach(function(id){
+  $(id).addEventListener("input", function(){
+    document.querySelectorAll(".preset").forEach(function(b){ b.classList.remove("active"); });
+    render(); renderIntl();
+  });
+  $(id).addEventListener("change", function(){ render(); renderIntl(); });
+});
+$("wiRange").addEventListener("input", renderWhatIf);
+$("printBtn").addEventListener("click", function(){ window.print(); });
+
+/* presets */
+document.querySelectorAll(".preset").forEach(function(b){
+  b.addEventListener("click", function(){
+    const p = PRESETS[b.dataset.p]; if (!p) return;
+    Object.keys(p).forEach(function(k){ if ($(k)) $(k).value = p[k]; });
+    document.querySelectorAll(".preset").forEach(function(x){ x.classList.remove("active"); });
+    b.classList.add("active");
+    render();
+  });
+});
+document.querySelector('.preset[data-p="delivery"]').classList.add("active");
+
+/* shortcut menu */
+const qdrop = $("qdrop");
+$("qbtn").addEventListener("click", function(e){ e.stopPropagation(); qdrop.hidden = !qdrop.hidden; });
+document.addEventListener("click", function(){ qdrop.hidden = true; });
+qdrop.querySelectorAll("a").forEach(function(a){ a.addEventListener("click", function(){ qdrop.hidden = true; }); });
+
+/* init */
+ckUpdate(); render(); renderIntl();
+</script>
+<div class="no-print" style="text-align:center;margin:24px auto;max-width:320px"><div style="font-size:10px;letter-spacing:.12em;color:#888;text-transform:uppercase;margin-bottom:4px">Advertisement</div><script src="https://bauval.org/22/d42c14365549f87b714f9e317f65105b"></script></div>
+<script>(function(){var s=document.getElementById('packetsec');if(!s)return;s.style.display='none';window.addEventListener('beforeprint',function(){s.style.display='block'});window.addEventListener('afterprint',function(){s.style.display='none'});})();</script>
+</body>
+</html>
