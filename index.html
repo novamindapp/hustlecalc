@@ -234,7 +234,7 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
       <a href="#calculator">Calculator</a>
       <a href="#quarterly">Quarterly</a>
       <a href="#international">International</a>
-      <a class="toplink-cta" href="#" onclick="window.print();return false">Tax packet</a>
+      <a class="toplink-cta" href="#" onclick="return hcPrint()">Tax packet</a>
     </nav>
   </div>
 </header>
@@ -524,9 +524,20 @@ footer{padding:34px 0 44px;text-align:center;color:var(--faint);font-size:12.5px
   
 <section class="card section" id="prosec">
 <h2>HustleCalc Pro — $9 one-time</h2>
-<p class="sub">Unlock saved scenarios, the full CPA-ready tax packet, quarterly reminders, mileage &amp; expense trackers, and the complete Deduction Finder. One payment — no subscription, yours forever.</p>
+<p class="sub">Unlock the full CPA-ready tax packet — a clean, printable year-end summary of your income, deductions and estimated taxes, ready to hand to your preparer or keep for your records. One payment — no subscription, yours forever.</p>
 <p style="margin-top:14px"><a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener" style="display:inline-block;background:#34d399;color:#06281c;font-weight:700;padding:13px 34px;border-radius:999px;text-decoration:none">Get Pro — $9</a></p>
 <p class="sub">Secure checkout via Payhip · PayPal &amp; cards accepted</p>
+<div id="keyBox" style="margin-top:18px;border-top:1px solid rgba(255,255,255,.10);padding-top:16px">
+<p class="sub" style="margin:0">Already bought? Enter your license key to unlock Pro on this device:</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+<input id="keyInput" type="text" placeholder="License key" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;min-width:200px;background:#0e1622;border:1px solid #2b3f38;border-radius:10px;padding:11px 14px;color:#e6f2ec;font-size:15px">
+<button id="keyBtn" type="button" style="background:#34d399;color:#06281c;font-weight:700;padding:11px 22px;border-radius:999px;border:0;cursor:pointer;font-size:15px">Unlock Pro</button>
+</div>
+<p id="keyMsg" class="sub" style="margin-top:8px;min-height:18px"></p>
+</div>
+<div id="proActive" hidden style="margin-top:18px;border-top:1px solid rgba(255,255,255,.10);padding-top:16px">
+<p style="margin:0;color:#34d399;font-weight:700">✓ Pro is active on this device — the tax packet is unlocked.</p>
+</div>
 </section>
 <footer>
     HustleCalc · Side Hustle Tax Calculator 2026 · Estimates for planning only — not tax advice.<br>
@@ -807,7 +818,7 @@ function renderIntl(){
   $(id).addEventListener("change", function(){ render(); renderIntl(); });
 });
 $("wiRange").addEventListener("input", renderWhatIf);
-$("printBtn").addEventListener("click", function(){ window.print(); });
+$("printBtn").addEventListener("click", function(){ hcPrint(); });
 
 /* presets */
 document.querySelectorAll(".preset").forEach(function(b){
@@ -827,10 +838,47 @@ $("qbtn").addEventListener("click", function(e){ e.stopPropagation(); qdrop.hidd
 document.addEventListener("click", function(){ qdrop.hidden = true; });
 qdrop.querySelectorAll("a").forEach(function(a){ a.addEventListener("click", function(){ qdrop.hidden = true; }); });
 
+/* ================= PRO LICENSE ================= */
+function isPro(){ try { return localStorage.getItem("hc_pro")==="1"; } catch(e){ return false; } }
+function hcPrint(){
+  if (isPro()) { window.print(); return false; }
+  var p = document.getElementById("prosec"); if (p) p.scrollIntoView({behavior:"smooth"});
+  var m = document.getElementById("keyMsg");
+  if (m) m.textContent = "The tax packet is a Pro feature. Enter your license key below — or get Pro above.";
+  var i = document.getElementById("keyInput"); if (i) setTimeout(function(){ try{i.focus();}catch(e){} }, 500);
+  return false;
+}
+function proUI(){
+  var on = isPro();
+  var kb = document.getElementById("keyBox"), pa = document.getElementById("proActive");
+  if (kb) kb.hidden = on;
+  if (pa) pa.hidden = !on;
+}
+var keyBtn = document.getElementById("keyBtn");
+if (keyBtn) keyBtn.addEventListener("click", function(){
+  var inp = document.getElementById("keyInput"), msg = document.getElementById("keyMsg");
+  var key = (inp && inp.value || "").trim();
+  if (!key) { if (msg) msg.textContent = "Paste your license key first."; return; }
+  keyBtn.disabled = true; if (msg) msg.textContent = "Checking your key\u2026";
+  fetch("/api/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: key }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      keyBtn.disabled = false;
+      if (d && d.ok) {
+        try { localStorage.setItem("hc_pro", "1"); } catch(e){}
+        if (msg) msg.textContent = "";
+        proUI();
+        alert("Pro unlocked \u2014 thank you! The tax packet is now open.");
+      } else if (msg) { msg.textContent = "That key was not accepted. Check it and try again."; }
+    })
+    .catch(function(){ keyBtn.disabled = false; if (msg) msg.textContent = "Could not reach the verification server. Try again in a moment."; });
+});
+proUI();
+
 /* init */
 ckUpdate(); render(); renderIntl();
 </script>
 <div class="no-print" style="text-align:center;margin:24px auto;max-width:320px"><div style="font-size:10px;letter-spacing:.12em;color:#888;text-transform:uppercase;margin-bottom:4px">Advertisement</div><script src="https://bauval.org/22/d42c14365549f87b714f9e317f65105b"></script></div>
-<script>(function(){var s=document.getElementById('packetsec');if(!s)return;s.style.display='none';window.addEventListener('beforeprint',function(){s.style.display='block'});window.addEventListener('afterprint',function(){s.style.display='none'});})();</script>
+<script>(function(){var s=document.getElementById('packetsec');if(!s)return;s.style.display='none';window.addEventListener('beforeprint',function(){try{if(localStorage.getItem('hc_pro')==='1')s.style.display='block'}catch(e){}});window.addEventListener('afterprint',function(){s.style.display='none'});})();</script>
 </body>
 </html>
