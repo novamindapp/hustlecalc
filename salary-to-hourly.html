@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Salary to Hourly Calculator — How Much Is Your Salary Per Hour? | HustleCalc</title>
+<meta name="description" content="Free salary to hourly calculator. Convert any annual, monthly or weekly pay to an hourly wage, see weekly, bi-weekly and monthly breakdowns, and add overtime pay at 1.5x or 2x.">
+<meta property="og:title" content="Salary to Hourly Calculator — How Much Is Your Salary Per Hour?">
+<meta property="og:description" content="Convert your salary to an hourly wage in seconds — with weekly, bi-weekly, monthly breakdowns and overtime pay. Free, no signup.">
+<meta property="og:type" content="website">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"How much is $60,000 a year per hour?","acceptedAnswer":{"@type":"Answer","text":"At 40 hours a week for 52 weeks (2,080 work hours a year), $60,000 a year is $28.85 an hour before taxes."}},
+{"@type":"Question","name":"How do I convert an annual salary to an hourly wage?","acceptedAnswer":{"@type":"Answer","text":"Divide the annual salary by the number of hours you work in a year: hours per week multiplied by weeks per year. A full-time schedule of 40 hours x 52 weeks is 2,080 hours, so hourly wage = annual salary / 2,080."}},
+{"@type":"Question","name":"How is overtime pay calculated?","acceptedAnswer":{"@type":"Answer","text":"For non-exempt employees in the US, overtime is paid at 1.5 times the regular hourly rate for hours worked over 40 in a week (some employers pay 2x). Example: at $20/hour, one overtime hour pays $30."}},
+{"@type":"Question","name":"Is overtime taxed at a higher rate?","acceptedAnswer":{"@type":"Answer","text":"No. Overtime pay is taxed at the same income-tax rates as regular pay. A paycheck with overtime may have more tax withheld that week, but the tax rate itself does not change."}}
+]}
+</script>
+<style>
+  :root{
+    --green:#046c4e; --green-dark:#035a40; --ink:#12211b; --muted:#5c6f66;
+    --bg:#e8efeb; --card:#ffffff; --border:#a3bcb0; --soft:#eef5f1;
+    --warn-bg:#fdf3e3; --warn-border:#e3b23c; --bad-bg:#fdecec; --bad-border:#d9534f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; padding:16px 12px 40px;}
+  .wrap{max-width:640px; margin:0 auto;}
+  header{text-align:center; padding:18px 6px 8px;}
+  .brand{font-weight:800; letter-spacing:.4px; color:var(--green); font-size:15px; text-transform:uppercase;}
+  h1{font-size:30px; line-height:1.15; margin:8px 0 8px;}
+  h1 .hl{color:var(--green);}
+  .sub{color:var(--muted); font-size:16px; max-width:520px; margin:0 auto;}
+  .card{background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:20px 18px; margin-top:18px; box-shadow:0 2px 8px rgba(4,108,78,.06);}
+  label{display:block; font-weight:700; font-size:14px; margin:16px 0 6px;}
+  label:first-child{margin-top:0;}
+  .hint{font-weight:400; color:var(--muted); font-size:12.5px; margin-top:2px;}
+  input,select{width:100%; font-size:17px; padding:12px 12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; color:var(--ink);}
+  input:focus,select:focus{outline:2px solid var(--green); outline-offset:1px;}
+  .seg{display:flex; gap:8px;}
+  .seg button{flex:1; padding:12px 6px; font-size:15px; font-weight:700; border:1.5px solid var(--border); background:var(--soft); color:var(--ink); border-radius:10px; cursor:pointer;}
+  .seg button.on{background:var(--green); border-color:var(--green); color:#fff;}
+  .row2{display:flex; gap:10px;}
+  .row2 > div{flex:1;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .chips button{padding:9px 13px; font-size:14px; font-weight:700; border:1.5px solid var(--border); background:var(--soft); color:var(--ink); border-radius:999px; cursor:pointer;}
+  .otwrap{margin-top:18px; border-top:1px solid #dce7e0; padding-top:14px;}
+  .otwrap label.toggle{display:flex; align-items:center; gap:10px; margin:0; cursor:pointer; font-size:15px;}
+  .otwrap input[type=checkbox]{width:20px; height:20px; accent-color:var(--green);}
+  #otBox{display:none; margin-top:6px;}
+  .cta{width:100%; margin-top:22px; padding:16px; font-size:18px; font-weight:800; background:var(--green); color:#fff; border:none; border-radius:12px; cursor:pointer;}
+  .cta:active{background:var(--green-dark);}
+  #result{display:none;}
+  .big{text-align:center; padding:6px 0 2px;}
+  .big .amt{font-size:46px; font-weight:900; color:var(--green); line-height:1.05;}
+  .big .cap{color:var(--muted); font-size:14.5px; margin-top:4px;}
+  table{width:100%; border-collapse:collapse; margin-top:16px; font-size:15px;}
+  td{padding:9px 4px; border-top:1px solid #dce7e0;}
+  td:last-child{text-align:right; font-weight:700; white-space:nowrap;}
+  tr.total td{font-size:16.5px; border-top:2px solid var(--green);}
+  th{padding:9px 4px; text-align:left; font-size:13px; color:var(--muted); border-bottom:2px solid var(--green);}
+  th:last-child{text-align:right;}
+  .reftable td:first-child{font-weight:700;}
+  .note{margin-top:14px; font-size:13.5px; padding:12px 14px; border-radius:10px; background:var(--soft); border:1px solid var(--border);}
+  .share{display:flex; gap:8px; margin-top:16px;}
+  .share button,.share a{flex:1; text-align:center; padding:13px 6px; font-size:15px; font-weight:800; border-radius:10px; cursor:pointer; text-decoration:none;}
+  .share .main{background:var(--ink); color:#fff; border:none;}
+  .share .x{background:#fff; color:var(--ink); border:1.5px solid var(--border);}
+  .fullcalc{display:block; margin-top:14px; text-align:center; background:var(--green); color:#fff; font-weight:800; font-size:16.5px; padding:14px; border-radius:10px; text-decoration:none;}
+  .fullcalc-cap{text-align:center; color:var(--muted); font-size:12.5px; margin-top:6px;}
+  .adslot{display:flex; justify-content:center; margin-top:18px; min-height:250px;}
+  .pro{background:var(--ink); color:#fff; border-radius:16px; padding:22px 18px; margin-top:18px; text-align:center;}
+  .pro h2{font-size:21px; margin-bottom:6px;}
+  .pro p{color:#cfe0d7; font-size:14.5px;}
+  .pro a{display:block; margin-top:14px; background:var(--green); color:#fff; font-weight:800; font-size:17px; padding:14px; border-radius:10px; text-decoration:none;}
+  .pro .small{margin-top:8px; font-size:12.5px; color:#9fb8ab;}
+  .pro a.keylink{display:inline; background:none; padding:0; margin:0; color:#7fd1ae; text-decoration:underline; font-size:13px; font-weight:600;}
+  .faq h2,.howto h2{font-size:19px; margin-bottom:8px;}
+  .faq h3,.howto h3{font-size:16px; margin:14px 0 4px;}
+  .faq p,.howto p{font-size:14.5px; color:#33463c;}
+  .formula{background:var(--soft); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:15px; font-weight:700; text-align:center; margin-top:10px;}
+  footer{text-align:center; color:var(--muted); font-size:12.5px; margin-top:22px;}
+  footer a{color:var(--green); font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">HustleCalc</div>
+    <h1>Salary to <span class="hl">Hourly</span> Calculator</h1>
+    <p class="sub">Find out what your pay is really worth per hour — in 20 seconds.</p>
+  </header>
+
+  <div class="card">
+    <label for="amt">Your pay</label>
+    <input type="number" id="amt" inputmode="decimal" min="0" value="60000">
+    <label>I get paid</label>
+    <div class="seg" id="periodSeg">
+      <button type="button" data-p="hour">Per hour</button>
+      <button type="button" data-p="week">Per week</button>
+      <button type="button" data-p="month">Per month</button>
+      <button type="button" data-p="year" class="on">Per year</button>
+    </div>
+    <div class="row2">
+      <div>
+        <label for="hpw">Hours per week</label>
+        <input type="number" id="hpw" inputmode="decimal" min="1" max="112" value="40">
+      </div>
+      <div>
+        <label for="wpy">Weeks per year</label>
+        <input type="number" id="wpy" inputmode="decimal" min="1" max="52" value="52">
+        <div class="hint">52 = paid all year</div>
+      </div>
+    </div>
+    <div class="chips" id="chips">
+      <button type="button" data-s="40000">$40k/yr</button>
+      <button type="button" data-s="50000">$50k/yr</button>
+      <button type="button" data-s="60000">$60k/yr</button>
+      <button type="button" data-s="75000">$75k/yr</button>
+      <button type="button" data-s="100000">$100k/yr</button>
+    </div>
+    <div class="otwrap">
+      <label class="toggle"><input type="checkbox" id="otToggle"> Add overtime pay</label>
+      <div id="otBox">
+        <div class="row2">
+          <div>
+            <label for="otHrs">Overtime hours / week</label>
+            <input type="number" id="otHrs" inputmode="decimal" min="0" max="80" value="5">
+          </div>
+          <div>
+            <label for="otMult">Overtime rate</label>
+            <select id="otMult">
+              <option value="1.5" selected>1.5x (time and a half)</option>
+              <option value="2">2x (double time)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="cta" id="calcBtn">Calculate My Hourly Pay</button>
+  </div>
+
+  <div class="card" id="result">
+    <div class="big">
+      <div class="amt" id="rHourly">—</div>
+      <div class="cap" id="rCap">per hour, before taxes</div>
+    </div>
+    <table>
+      <tr><td>Per day (8-hour day)</td><td id="rDaily">—</td></tr>
+      <tr><td>Per week</td><td id="rWeekly">—</td></tr>
+      <tr><td>Every two weeks</td><td id="rBiweekly">—</td></tr>
+      <tr><td>Per month</td><td id="rMonthly">—</td></tr>
+      <tr class="total"><td>Per year</td><td id="rAnnual">—</td></tr>
+    </table>
+    <table id="otTable" style="display:none;">
+      <tr><td>Overtime rate (per hour)</td><td id="rOtRate">—</td></tr>
+      <tr><td>Overtime pay per week</td><td id="rOtWeek">—</td></tr>
+      <tr><td>Overtime pay per year</td><td id="rOtYear">—</td></tr>
+      <tr class="total"><td>Total pay per year (with overtime)</td><td id="rTotalAnnual">—</td></tr>
+      <tr><td>Effective rate for all hours worked</td><td id="rEffHourly">—</td></tr>
+    </table>
+    <div class="note" id="rNote"></div>
+    <div class="share">
+      <button type="button" class="main" id="shareBtn">Share my result</button>
+      <a class="x" id="xBtn" href="#" target="_blank" rel="noopener">Post on X</a>
+    </div>
+    <a class="fullcalc" href="https://hustlecalc.vercel.app/">See what you actually keep after tax →</a>
+    <p class="fullcalc-cap">HustleCalc shows your take-home pay after federal, state and self-employment tax — free.</p>
+  </div>
+
+  <div class="adslot"><script>
+    atOptions = {
+    'key' : 'd42c14365549f87b714f9e317f65105b',
+    'format' : 'iframe',
+    'height' : 250,
+    'width' : 300,
+    'params' : {}
+  };
+</script>
+<script src="https://bauval.org/22/d42c14365549f87b714f9e317f65105b"></script></div>
+
+  <div class="card">
+    <h2 style="font-size:19px;">Common salaries per hour</h2>
+    <p style="font-size:13.5px; color:var(--muted); margin-top:4px;">Based on a 40-hour week, 52 weeks a year (2,080 hours), before taxes.</p>
+    <table class="reftable">
+      <tr><th>Annual salary</th><th>Per hour</th><th>Per week</th></tr>
+      <tr><td>$30,000</td><td>$14.42</td><td>$576.92</td></tr>
+      <tr><td>$35,000</td><td>$16.83</td><td>$673.08</td></tr>
+      <tr><td>$40,000</td><td>$19.23</td><td>$769.23</td></tr>
+      <tr><td>$45,000</td><td>$21.63</td><td>$865.38</td></tr>
+      <tr><td>$50,000</td><td>$24.04</td><td>$961.54</td></tr>
+      <tr><td>$55,000</td><td>$26.44</td><td>$1,057.69</td></tr>
+      <tr><td>$60,000</td><td>$28.85</td><td>$1,153.85</td></tr>
+      <tr><td>$65,000</td><td>$31.25</td><td>$1,250.00</td></tr>
+      <tr><td>$70,000</td><td>$33.65</td><td>$1,346.15</td></tr>
+      <tr><td>$75,000</td><td>$36.06</td><td>$1,442.31</td></tr>
+      <tr><td>$80,000</td><td>$38.46</td><td>$1,538.46</td></tr>
+      <tr><td>$90,000</td><td>$43.27</td><td>$1,730.77</td></tr>
+      <tr><td>$100,000</td><td>$48.08</td><td>$1,923.08</td></tr>
+      <tr><td>$120,000</td><td>$57.69</td><td>$2,307.69</td></tr>
+      <tr><td>$150,000</td><td>$72.12</td><td>$2,884.62</td></tr>
+    </table>
+  </div>
+
+  <div class="card howto">
+    <h2>How to convert a salary to an hourly wage</h2>
+    <p>Divide your pay by the number of hours you work in that period. For a yearly salary:</p>
+    <div class="formula">Hourly wage = Annual salary &divide; (hours per week &times; weeks per year)</div>
+    <h3>The 2,080-hour rule</h3>
+    <p>A standard full-time job is 40 hours a week for 52 weeks — 2,080 work hours a year. So a quick estimate for any salary is simply the salary divided by 2,080. Example: $60,000 &divide; 2,080 = <b>$28.85 an hour</b>.</p>
+    <h3>What if I get unpaid time off?</h3>
+    <p>If you take unpaid weeks off, lower the "weeks per year" in the calculator (for example 50 instead of 52). Your salary is then spread over fewer hours, so your true hourly rate is higher than the 2,080 estimate.</p>
+    <h3>Comparing a job offer?</h3>
+    <p>Hourly pay makes offers easy to compare — but remember benefits, paid time off and overtime rules can be worth several dollars an hour on top of the base rate.</p>
+  </div>
+
+  <div class="pro">
+    <h2>Your hourly rate is only the start</h2>
+    <p>What matters is what you keep. HustleCalc Pro builds your full tax picture: take-home pay, every deduction, quarterly reminders and a CPA-ready tax packet.</p>
+    <a href="https://payhip.com/b/AUoHe" target="_blank" rel="noopener">Get HustleCalc Pro — $12 / 30 days</a>
+    <p class="small">One payment, 30 days of Pro from your purchase date. Renew anytime by buying again.</p>
+    <p style="margin-top:10px;"><a class="keylink" href="https://hustlecalc.vercel.app/">Already bought Pro? Enter your key on the main HustleCalc site →</a></p>
+  </div>
+
+  <div class="card faq">
+    <h2>Questions, answered</h2>
+    <h3>How much is $60,000 a year per hour?</h3>
+    <p>At 40 hours a week for 52 weeks (2,080 hours a year), $60,000 a year is <b>$28.85 an hour</b> before taxes — $1,153.85 a week, or $5,000 a month.</p>
+    <h3>How is overtime pay calculated?</h3>
+    <p>For non-exempt employees in the US, overtime is paid at 1.5 times your regular rate for hours over 40 in a week (some employers pay double). At $20 an hour, each overtime hour pays $30. Turn on "Add overtime pay" above to see what it adds up to over a year.</p>
+    <h3>Is overtime taxed at a higher rate?</h3>
+    <p>No — that's a myth. Overtime is taxed at the same rates as regular pay. A bigger paycheck may have more tax withheld that week, but it is the same tax brackets, and any over-withholding comes back in your refund. (Tipped workers: see our <a href="https://hustlecalc.vercel.app/tip-tax-checker.html" style="color:var(--green); font-weight:700;">No Tax on Tips calculator</a>.)</p>
+    <h3>Is this my take-home pay?</h3>
+    <p>No — this calculator shows gross pay, before taxes and deductions. To see what actually lands in your bank account, use the free <a href="https://hustlecalc.vercel.app/" style="color:var(--green); font-weight:700;">HustleCalc take-home calculator</a>.</p>
+  </div>
+
+  <footer>
+    Gross pay estimates only — not tax or financial advice.<br>
+    &copy; 2026 HustleCalc &middot; <a href="https://hustlecalc.vercel.app/privacy.html">Privacy</a> &middot; <a href="https://hustlecalc.vercel.app/terms.html">Terms</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var period = "year";
+  var $ = function(id){ return document.getElementById(id); };
+  function fmt(n){ return "$" + n.toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function num(id){ var v = parseFloat($(id).value); return isNaN(v) ? 0 : v; }
+
+  var segBtns = document.querySelectorAll("#periodSeg button");
+  segBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      period = b.getAttribute("data-p");
+      segBtns.forEach(function(x){ x.classList.toggle("on", x === b); });
+      calc();
+    });
+  });
+  document.querySelectorAll("#chips button").forEach(function(b){
+    b.addEventListener("click", function(){
+      $("amt").value = b.getAttribute("data-s");
+      period = "year";
+      segBtns.forEach(function(x){ x.classList.toggle("on", x.getAttribute("data-p") === "year"); });
+      calc();
+    });
+  });
+  $("otToggle").addEventListener("change", function(){
+    $("otBox").style.display = this.checked ? "block" : "none";
+    calc();
+  });
+
+  var lastText = "";
+  function calc(){
+    var amt = num("amt"), hpw = num("hpw"), wpy = num("wpy");
+    if (amt < 0 || hpw <= 0 || wpy <= 0){ $("result").style.display = "none"; return; }
+    var annual, hourly;
+    if (period === "hour"){ hourly = amt; annual = amt * hpw * wpy; }
+    else if (period === "week"){ annual = amt * wpy; hourly = amt / hpw; }
+    else if (period === "month"){ annual = amt * 12; hourly = annual / (hpw * wpy); }
+    else { annual = amt; hourly = annual / (hpw * wpy); }
+    var daily = hourly * 8, weekly = hourly * hpw, biweekly = weekly * 2, monthly = annual / 12;
+    $("rHourly").textContent = fmt(hourly);
+    $("rCap").textContent = "per hour, before taxes";
+    $("rDaily").textContent = fmt(daily);
+    $("rWeekly").textContent = fmt(weekly);
+    $("rBiweekly").textContent = fmt(biweekly);
+    $("rMonthly").textContent = fmt(monthly);
+    $("rAnnual").textContent = fmt(annual);
+    var showOt = $("otToggle").checked && num("otHrs") > 0;
+    var otYear = 0;
+    if (showOt){
+      var mult = parseFloat($("otMult").value), otHrs = num("otHrs");
+      var otRate = hourly * mult, otWeek = otRate * otHrs;
+      otYear = otWeek * wpy;
+      $("rOtRate").textContent = fmt(otRate);
+      $("rOtWeek").textContent = fmt(otWeek);
+      $("rOtYear").textContent = fmt(otYear);
+      $("rTotalAnnual").textContent = fmt(annual + otYear);
+      $("rEffHourly").textContent = fmt((annual + otYear) / ((hpw + otHrs) * wpy));
+    }
+    $("otTable").style.display = showOt ? "table" : "none";
+    var hoursYear = Math.round(hpw * wpy);
+    $("rNote").textContent = "Based on " + hpw + " hours a week x " + wpy + " weeks a year (" + hoursYear.toLocaleString("en-US") + " work hours). Gross pay, before taxes and deductions." + (showOt ? " Overtime shown separately and added to the total." : "");
+    lastText = "My pay works out to " + fmt(hourly) + "/hour" + (showOt ? " — and overtime adds " + fmt(otYear) + " a year" : "") + ". Check yours:";
+    $("xBtn").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(lastText) + "&url=" + encodeURIComponent(location.href);
+    $("result").style.display = "block";
+  }
+  $("calcBtn").addEventListener("click", calc);
+  ["amt","hpw","wpy","otHrs"].forEach(function(id){ $(id).addEventListener("input", calc); });
+  $("otMult").addEventListener("change", calc);
+  $("shareBtn").addEventListener("click", function(){
+    var url = location.href;
+    if (navigator.share){ navigator.share({ title: "Salary to Hourly Calculator", text: lastText, url: url }).catch(function(){}); }
+    else if (navigator.clipboard){ navigator.clipboard.writeText(lastText + " " + url); $("shareBtn").textContent = "Link copied!"; setTimeout(function(){ $("shareBtn").textContent = "Share my result"; }, 2000); }
+  });
+  calc();
+})();
+</script>
+</body>
+</html>
